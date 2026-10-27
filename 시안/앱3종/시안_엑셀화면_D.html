@@ -1,0 +1,260 @@
+<title>엑셀 정리 도우미 시안 D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* 엑셀 화면 그대로: 위 도구줄 → 수식줄 → 표 → 아래 안내판. 되돌리기는 맨 위에 고정 */
+:root{--bg:#eef1ee;--paper:#fff;--ink:#17201b;--sub:#58635c;--line:#cdd5cf;--accent:#1d6f42;--onacc:#fff;--head:#e3e9e5;--flag:#ffe3d1;--mark:#d9480f;--hl:#fff1a8;--sel:#e1f0e7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#13181a;--paper:#1c2326;--ink:#eaf0ec;--sub:#9fada5;--line:#38443f;--accent:#5fcf93;--onacc:#06231a;--head:#273029;--flag:#4d2b17;--mark:#ff9660;--hl:#6d5a0d;--sel:#1f3a2c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#13181a;--paper:#1c2326;--ink:#eaf0ec;--sub:#9fada5;--line:#38443f;--accent:#5fcf93;--onacc:#06231a;--head:#273029;--flag:#4d2b17;--mark:#ff9660;--hl:#6d5a0d;--sel:#1f3a2c;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 18px/1.5 "Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:0 40px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);background:var(--accent);z-index:20}
+.app{max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:10px}
+button{font:inherit;cursor:pointer;border-radius:2px;min-height:48px;padding:6px 14px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink)}
+button:hover{border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:1px}
+button:disabled{opacity:.35;cursor:default}
+.go{background:var(--accent);border-color:var(--accent);color:var(--onacc);font-weight:700}
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--accent);color:var(--onacc);margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));display:flex;gap:8px;align-items:center}
+.top .name{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.top button{background:rgba(255,255,255,.14);color:var(--onacc);border-color:rgba(255,255,255,.55)}
+.top button:disabled{opacity:.4}
+.steps{display:flex;margin:0;padding:0;list-style:none}
+.steps li{flex:1;text-align:center;padding:6px 2px;border-bottom:4px solid var(--line);color:var(--sub)}
+.steps .done{color:var(--accent);border-color:var(--accent)}
+.steps .on{color:var(--ink);font-weight:700;border-color:var(--ink)}
+.msg{min-height:30px;margin:0;color:var(--accent);font-weight:700}
+.tools{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.tools button{flex:0 0 auto;white-space:nowrap}
+.fxbar{display:flex;gap:0;border:1.5px solid var(--line);background:var(--paper)}
+.fxbar .nb{flex:0 0 64px;display:flex;align-items:center;justify-content:center;border-right:1.5px solid var(--line);font-weight:700;background:var(--head)}
+.fxbar .fxl{flex:0 0 40px;display:flex;align-items:center;justify-content:center;color:var(--sub);font-style:italic;border-right:1.5px solid var(--line)}
+.fxbar input{flex:1;min-width:0;border:0;font:inherit;padding:8px 10px;background:var(--paper);color:var(--ink)}
+.info{margin:0;color:var(--sub)}
+.grid{overflow:auto;max-height:44vh;min-height:200px;border:1.5px solid var(--line);background:var(--paper)}
+table{border-collapse:separate;border-spacing:0;font-size:18px;font-variant-numeric:tabular-nums}
+th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 10px;white-space:nowrap;min-width:96px;max-width:200px;overflow:hidden;text-overflow:ellipsis;position:relative;height:44px}
+thead th{position:sticky;top:0;background:var(--head);z-index:2;font-weight:700;cursor:pointer;text-align:center}
+tbody th{position:sticky;left:0;background:var(--head);min-width:44px;max-width:44px;padding:6px 4px;text-align:center;font-weight:400;color:var(--sub);z-index:1}
+thead th:first-child{left:0;z-index:3;min-width:44px;max-width:44px;cursor:default}
+th.sc{background:var(--accent);color:var(--onacc)}
+td.hd{font-weight:700;background:var(--head)}
+td.col{background:var(--sel)}
+td.bad{background:var(--flag)}
+td.bad::after{content:"";position:absolute;right:0;top:0;border-style:solid;border-width:0 12px 12px 0;border-color:transparent var(--mark) transparent transparent}
+td.ch{background:var(--hl)}
+td.cur{outline:3px solid var(--accent);outline-offset:-3px}
+tr.rowbad th{color:var(--mark);font-weight:700}
+.tabs{display:flex;border-bottom:2px solid var(--line)}
+.tabs button{flex:1;border:0;border-bottom:4px solid transparent;margin-bottom:-2px;background:none;min-height:52px;color:var(--sub);padding-inline:2px}
+.tabs button.on{color:var(--ink);font-weight:700;border-bottom-color:var(--accent)}
+.panel{display:flex;flex-direction:column;gap:12px;padding-top:6px}
+.panel h2{margin:0;font-size:20px}
+.row{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.row .t{flex:1 1 220px;min-width:0}
+.row .t b{display:block}
+.row .t span{color:var(--sub)}
+.fld{display:flex;flex-direction:column;gap:4px}
+.fld span{color:var(--sub)}
+.fld input,.fld select{font:inherit;padding:10px 12px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);border-radius:2px;min-width:0;width:100%}
+.vals label{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);min-height:48px}
+.vals input[type=checkbox]{width:24px;height:24px;accent-color:var(--accent)}
+.vals .n{margin-left:auto;color:var(--sub)}
+.log li{padding:6px 0;border-bottom:1px solid var(--line)}
+.log{margin:0;padding-left:26px}
+.empty{color:var(--sub);margin:0}
+.next{display:flex;justify-content:flex-end;padding-top:6px}
+textarea.csv{width:100%;min-height:90px;font:inherit;padding:10px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink)}
+</style>
+
+<div class="app">
+  <div class="top"><span class="name" id="fname">매출_3-4월.xlsx</span><button id="undo" disabled>↶ 되돌리기</button><button id="redo" disabled>↷ 다시</button></div>
+  <ol class="steps"><li class="done">① 파일 올리기</li><li class="on">② 고치기</li><li>③ 결과 받기</li></ol>
+  <p class="msg" id="msg" role="status"></p>
+  <div class="tools" id="tools"></div>
+  <div class="fxbar"><div class="nb" id="nb">A1</div><div class="fxl">fx</div><input id="fx" aria-label="칸 내용 고치기" enterkeyhint="done"></div>
+  <p class="info" id="info"></p>
+  <div class="grid" id="grid"></div>
+  <div class="tabs" id="tabs"></div>
+  <div class="panel" id="panel"></div>
+</div>
+
+<script>
+const SAMPLE=[["날짜","지점","담당자","상품","수량","매출","비고"],
+["2026.03.02","서울","김민수 ","사과","3개","12,000원",""],
+["2026-03-05","서울시","이영희","사과","2","8000",""],
+["2026/03/09","부산","박철수","배","5","15,000",""],
+["2026-03-09","부산","박철수","배","5","15000",""],
+["2026-03-11"," 서울","최지은","포도","10개","9,000원","급함"],
+["","","","","","",""],
+["2026-04-01","대구","김민수","사과","4","7000",""],
+["2026.04.03","서울 본점","이영희","배","6","11,000원",""],
+["2026-04-07","부산시","박철수","포도","３","6,500원",""],
+["2026-04-09","대구","정수진","사과","7","21,000원",""],
+["2026-04-12","서울","최지은","배","2","4,000원",""],
+["2026-04-15","서울시","김민수","포도","12개","9000",""],
+["2026-04-20","부산","박철수","사과","","5000",""],
+["2026-04-21","대구시","정수진","배","8","16,000원",""]];
+const KIND={trim:'앞뒤에 빈칸이 붙어 있어요',date:'날짜 모양이 달라요',num:'숫자에 글자가 붙어 있어요',sim:'같은 뜻인데 다르게 적었어요'};
+const clone=a=>a.map(r=>r.slice());
+let D=clone(SAMPLE),undo=[],redo=[],log=[],changed=new Set(),sel={r:1,c:0},tab='prob',
+ ui={checked:new Set(),target:'',find:'',repl:'',scope:'col'};
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const L=c=>String.fromCharCode(65+c),ref=(r,c)=>L(c)+(r+1);
+const half=s=>s.replace(/[０-９]/g,d=>String.fromCharCode(d.charCodeAt(0)-0xFF10+48));
+const norm=v=>half(v).replace(/\s+/g,' ').trim();
+const DATE=/^(\d{4})\s*[.\/\-년]\s*(\d{1,2})\s*[.\/\-월]\s*(\d{1,2})\s*일?$/;
+const toDate=v=>{const m=DATE.exec(v);return m?`${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`:null};
+const toNum=v=>{const s=half(v).replace(/[,\s원개명건회₩]/g,'');return /^-?\d+(\.\d+)?$/.test(s)?s:null};
+const isBlankRow=r=>r.every(v=>norm(v)==='');
+
+function analyze(){
+  const flags=new Map(),cols=D[0].length,type=[];
+  for(let c=0;c<cols;c++){
+    const vals=[];for(let r=1;r<D.length;r++){const v=norm(D[r][c]);if(v!=='')vals.push(v)}
+    const nd=vals.filter(v=>toDate(v)).length,nn=vals.filter(v=>toNum(v)!==null).length;
+    type[c]=vals.length&&nd/vals.length>=.6?'date':vals.length&&nn/vals.length>=.6?'num':'text';
+  }
+  for(let r=1;r<D.length;r++)for(let c=0;c<cols;c++){
+    const raw=D[r][c],v=norm(raw);if(v==='')continue;
+    let to=v,kind='trim';
+    if(type[c]==='date'){const d=toDate(v);if(d)to=d;if(d&&d!==v)kind='date'}
+    else if(type[c]==='num'){const n=toNum(v);if(n!==null)to=n;if(n!==null&&n!==v)kind='num'}
+    if(to!==raw)flags.set(r+','+c,{kind,to,from:raw});
+  }
+  const sim=simMap();
+  for(let r=1;r<D.length;r++)for(let c=0;c<cols;c++){
+    if(type[c]!=='text'||flags.has(r+','+c))continue;const v=norm(D[r][c]);
+    if(sim[c]&&sim[c][v])flags.set(r+','+c,{kind:'sim',to:sim[c][v],from:D[r][c]});
+  }
+  const empty=[],dup=[],seen=new Set();
+  for(let r=1;r<D.length;r++){if(isBlankRow(D[r])){empty.push(r);continue}
+    const k=D[r].map(norm).join('|');if(seen.has(k))dup.push(r);else seen.add(k)}
+  return{flags,type,empty,dup};
+}
+function simMap(){
+  const out=[];
+  for(let c=0;c<D[0].length;c++){
+    const cnt=new Map();for(let r=1;r<D.length;r++){const v=norm(D[r][c]);if(v!=='')cnt.set(v,(cnt.get(v)||0)+1)}
+    const vs=[...cnt.keys()],m={};
+    vs.forEach(a=>{let best=null;vs.forEach(b=>{if(b!==a&&b.length>=2&&a.startsWith(b)){if(!best||cnt.get(b)>cnt.get(best)||(cnt.get(b)===cnt.get(best)&&b.length<best.length))best=b}});if(best)m[a]=best});
+    out[c]=m;
+  }
+  return out;
+}
+function toast(t){$('msg').textContent=t}
+function act(label,fn){
+  const before=clone(D);changed=new Set();fn();
+  if(JSON.stringify(before)===JSON.stringify(D)){toast('고칠 곳이 없어요.');renderAll();return false}
+  undo.push({d:before,label});redo=[];log.push(label);toast('했어요: '+label);fixSel();renderAll();return true;
+}
+function fixSel(){sel.r=Math.min(Math.max(sel.r,1),Math.max(D.length-1,1));sel.c=Math.min(sel.c,D[0].length-1)}
+function doUndo(){const it=undo.pop();if(!it)return;redo.push({d:clone(D),label:it.label});D=it.d;log.pop();changed=new Set();toast('되돌렸어요: '+it.label);fixSel();renderAll()}
+function doRedo(){const it=redo.pop();if(!it)return;undo.push({d:clone(D),label:it.label});D=it.d;log.push(it.label);changed=new Set();toast('다시 했어요: '+it.label);fixSel();renderAll()}
+function fixKinds(kinds,col){const A=analyze();A.flags.forEach((f,k)=>{const[r,c]=k.split(',').map(Number);if(kinds.includes(f.kind)&&(col==null||col===c)){D[r][c]=f.to;changed.add(k)}})}
+function delRows(list){const s=new Set(list);D=D.filter((r,i)=>!s.has(i));changed=new Set()}
+function fillDown(c){for(let r=2;r<D.length;r++){if(norm(D[r][c])===''&&!isBlankRow(D[r])&&norm(D[r-1][c])!==''){D[r][c]=D[r-1][c];changed.add(r+','+c)}}}
+
+const TOOLS=[
+ ['all','추천대로 모두 고치기',true],['trim','빈칸 지우기'],['date','날짜 맞추기'],['num','숫자만 남기기'],
+ ['fill','위 값으로 채우기'],['empty','빈 줄 지우기'],['dup','같은 줄 지우기']];
+function renderTools(){$('tools').innerHTML=TOOLS.map(([k,t,g])=>`<button data-a="tool" data-k="${k}" class="${g?'go':''}">${t}</button>`).join('')}
+
+function renderGrid(){
+  const A=analyze(),g=$('grid'),st=g.scrollTop,sl=g.scrollLeft,bad=new Set([...A.empty,...A.dup]);
+  let h='<table><thead><tr><th></th>'+D[0].map((_,c)=>`<th data-a="col" data-c="${c}" class="${sel.c===c?'sc':''}">${L(c)}</th>`).join('')+'</tr></thead><tbody>';
+  D.forEach((row,r)=>{h+=`<tr class="${bad.has(r)?'rowbad':''}"><th>${r+1}</th>`+row.map((v,c)=>{
+    const k=r+','+c,cl=[];if(r===0)cl.push('hd');else{if(A.flags.has(k))cl.push('bad');if(changed.has(k))cl.push('ch');if(sel.c===c)cl.push('col')}
+    if(sel.r===r&&sel.c===c)cl.push('cur');
+    return`<td data-a="cell" data-r="${r}" data-c="${c}" class="${cl.join(' ')}">${esc(v).replace(/^ | $/g,m=>'␣')}</td>`}).join('')+'</tr>'});
+  g.innerHTML=h+'</tbody></table>';g.scrollTop=st;g.scrollLeft=sl;
+  $('nb').textContent=ref(sel.r,sel.c);
+  if(document.activeElement!==$('fx'))$('fx').value=D[sel.r]?D[sel.r][sel.c]:'';
+  const n=[...A.flags.keys()].filter(k=>+k.split(',')[1]===sel.c).length;
+  $('info').textContent=`${L(sel.c)}칸 「${D[0][sel.c]}」 · ${n?`이상한 곳 ${n}곳 (주황색 칸)`:'이상한 곳이 없어요'}`;
+  return A;
+}
+function renderTabs(A){
+  const total=A.flags.size+A.empty.length+A.dup.length;
+  const T=[['prob',`이상한 곳 ${total}`],['vals','값 목록'],['find','바꾸기'],['log',`한 일 ${log.length}`]];
+  $('tabs').innerHTML=T.map(([k,t])=>`<button data-a="tab" data-k="${k}" class="${tab===k?'on':''}">${t}</button>`).join('');
+}
+function renderPanel(A){
+  const P=$('panel');let h='';
+  if(tab==='prob'){
+    const by={};A.flags.forEach((f,k)=>{(by[f.kind]=by[f.kind]||[]).push([k,f])});
+    const rows=[];
+    ['trim','date','num','sim'].forEach(kd=>{const a=by[kd];if(!a)return;const[k0,f0]=a[0],c0=+k0.split(',')[1];
+      rows.push(`<div class="row"><div class="t"><b>${KIND[kd]} · ${a.length}곳</b><span>예: ${esc(norm(f0.from)===f0.from?f0.from:f0.from.replace(/^ | $/g,m=>'␣'))} → ${esc(f0.to)}</span></div>`+
+       (kd==='sim'?`<button data-a="gosim" data-k="${k0}">값 목록에서 고르기</button>`:`<button class="go" data-a="fixkind" data-k="${kd}">${a.length}곳 고치기</button>`)+'</div>')});
+    if(A.empty.length)rows.push(`<div class="row"><div class="t"><b>빈 줄이 있어요 · ${A.empty.length}줄</b><span>${A.empty.map(r=>r+1).join(', ')}번 줄</span></div><button class="go" data-a="tool" data-k="empty">지우기</button></div>`);
+    if(A.dup.length)rows.push(`<div class="row"><div class="t"><b>똑같은 줄이 있어요 · ${A.dup.length}줄</b><span>${A.dup.map(r=>r+1).join(', ')}번 줄 (먼저 나온 줄은 남겨요)</span></div><button class="go" data-a="tool" data-k="dup">지우기</button></div>`);
+    h=`<h2>${rows.length?'이상한 곳을 찾았어요':'이상한 곳이 없어요'}</h2>`+(rows.join('')||'<p class="empty">표가 깨끗해요. 아래 [다음]으로 가세요.</p>')+`<div class="next"><button class="go" data-a="next">다음: 결과 받기 →</button></div>`;
+  }else if(tab==='vals'){
+    const c=sel.c,cnt=new Map();for(let r=1;r<D.length;r++){const v=D[r][c];if(norm(v)!=='')cnt.set(v,(cnt.get(v)||0)+1)}
+    const list=[...cnt.entries()].sort((a,b)=>b[1]-a[1]);
+    h=`<h2>${L(c)}칸 「${esc(D[0][c])}」에 들어 있는 값</h2><p class="empty">합칠 값에 체크하고, 어떤 말로 바꿀지 쓰세요.</p><div class="vals">`+
+     (list.map(([v,n],i)=>`<label><input type="checkbox" data-a="chk" data-i="${i}" ${ui.checked.has(v)?'checked':''}>${esc(v.replace(/^ | $/g,m=>'␣'))||'(빈칸)'}<span class="n">${n}개</span></label>`).join('')||'<p class="empty">값이 없어요.</p>')+'</div>'+
+     `<label class="fld"><span>모두 이 말로 바꾸기</span><input id="tgt" value="${esc(ui.target)}" placeholder="예: 서울"></label>`+
+     `<div class="tools"><button data-a="autosim">비슷한 값 자동으로 고르기</button><button class="go" data-a="merge">체크한 값 바꾸기</button></div>`;
+    P._list=list.map(x=>x[0]);
+  }else if(tab==='find'){
+    h=`<h2>찾아 바꾸기</h2><label class="fld"><span>찾을 말</span><input id="fnd" value="${esc(ui.find)}"></label><label class="fld"><span>바꿀 말 (비워 두면 지워요)</span><input id="rep" value="${esc(ui.repl)}"></label>`+
+     `<label class="fld"><span>어디에서?</span><select id="scp"><option value="col" ${ui.scope==='col'?'selected':''}>지금 고른 ${L(sel.c)}칸만</option><option value="all" ${ui.scope==='all'?'selected':''}>표 전체</option></select></label>`+
+     `<p class="empty" id="fcnt"></p><div class="tools"><button class="go" data-a="doreplace">바꾸기</button></div>`;
+  }else{
+    h=`<h2>지금까지 한 일</h2>`+(log.length?`<ol class="log">${log.map(x=>`<li>${esc(x)}</li>`).join('')}</ol><p class="empty">맨 위 [되돌리기]를 누르면 마지막 일부터 취소돼요.</p>`:'<p class="empty">아직 한 일이 없어요. 원본 파일은 바뀌지 않아요.</p>');
+  }
+  P.innerHTML=h;if(tab==='find')updFind();
+}
+function updFind(){const f=ui.find;let n=0;if(f){D.forEach((row,r)=>{if(r===0)return;row.forEach((v,c)=>{if((ui.scope==='all'||c===sel.c)&&v.includes(f))n++})})}const e=$('fcnt');if(e)e.textContent=f?`${n}곳이 바뀌어요.`:''}
+function renderAll(){if(tab==='res')tab='prob';renderTools();const A=renderGrid();renderTabs(A);renderPanel(A);$('undo').disabled=!undo.length;$('redo').disabled=!redo.length}
+
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='cell'){sel={r:+b.dataset.r,c:+b.dataset.c};if(sel.r===0)sel.r=1;changed=new Set();ui.checked=new Set();ui.target='';renderAll()}
+  else if(a==='col'){sel.c=+b.dataset.c;ui.checked=new Set();ui.target='';renderAll()}
+  else if(a==='tab'){tab=b.dataset.k;renderAll()}
+  else if(a==='fixkind'){const kd=b.dataset.k;act(KIND[kd].replace(/요$/,'던 것 고치기'),()=>fixKinds([kd]))}
+  else if(a==='gosim'){const c=+b.dataset.k.split(',')[1];sel={r:+b.dataset.k.split(',')[0],c};tab='vals';ui.checked=new Set();ui.target='';autoSim();renderAll()}
+  else if(a==='tool'){tool(b.dataset.k)}
+  else if(a==='chk'){const v=$('panel')._list[+b.dataset.i];b.checked?ui.checked.add(v):ui.checked.delete(v);if(!ui.target&&ui.checked.size===1){ui.target=norm(v);$('tgt').value=ui.target}}
+  else if(a==='autosim'){autoSim();renderAll()}
+  else if(a==='merge'){const to=($('tgt')||{}).value??ui.target,c=sel.c,set=ui.checked;if(!set.size){toast('합칠 값에 체크해 주세요.');return}if(to.trim()===''){toast('바꿀 말을 써 주세요.');return}
+    act(`${L(c)}칸 ${set.size}가지 값을 「${to.trim()}」로 합치기`,()=>{for(let r=1;r<D.length;r++){if(set.has(D[r][c])){D[r][c]=to.trim();changed.add(r+','+c)}}});ui.checked=new Set();ui.target=''}
+  else if(a==='doreplace'){const f=ui.find,t=ui.repl,c=sel.c;if(!f){toast('찾을 말을 써 주세요.');return}
+    act(`「${f}」→「${t}」 바꾸기`,()=>{for(let r=1;r<D.length;r++)for(let k=0;k<D[r].length;k++){if((ui.scope==='all'||k===c)&&D[r][k].includes(f)){D[r][k]=D[r][k].split(f).join(t);changed.add(r+','+k)}}})}
+  else if(a==='next'){showResult()}
+});
+function autoSim(){const m=simMap()[sel.c]||{},n={};ui.checked=new Set();ui.target='';
+  Object.values(m).forEach(r=>n[r]=(n[r]||0)+1);const rep=Object.keys(n).sort((a,b)=>n[b]-n[a])[0];
+  if(!rep){toast('비슷한 값이 없어요.');return}
+  ui.target=rep;for(let r=1;r<D.length;r++){const v=D[r][sel.c],x=norm(v);if(x===rep||m[x]===rep)ui.checked.add(v)}
+  toast(`「${rep}」와 비슷한 값을 골랐어요. 다른 말도 있으면 한 번 더 눌러 주세요.`)}
+function tool(k){const c=sel.c,name=L(c)+'칸';
+  if(k==='all')act('추천대로 모두 고치기',()=>fixKinds(['trim','date','num']));
+  else if(k==='trim')act(`${name} 빈칸 지우기`,()=>fixKinds(['trim'],c));
+  else if(k==='date')act(`${name} 날짜 맞추기`,()=>fixKinds(['date','trim'],c));
+  else if(k==='num')act(`${name} 숫자만 남기기`,()=>fixKinds(['num','trim'],c));
+  else if(k==='fill')act(`${name} 빈칸을 위 값으로 채우기`,()=>fillDown(c));
+  else if(k==='empty'){const A=analyze();act('빈 줄 지우기',()=>delRows(A.empty))}
+  else if(k==='dup'){const A=analyze();act('같은 줄 지우기',()=>delRows(A.dup))}}
+$('undo').onclick=doUndo;$('redo').onclick=doRedo;
+$('fx').addEventListener('change',()=>{const v=$('fx').value;if(v===D[sel.r][sel.c])return;act(`${ref(sel.r,sel.c)} 칸 직접 고치기`,()=>{D[sel.r][sel.c]=v;changed.add(sel.r+','+sel.c)})});
+$('fx').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.id==='tgt')ui.target=t.value;
+  if(t.id==='fnd'){ui.find=t.value;updFind()}
+  if(t.id==='rep')ui.repl=t.value;
+  if(t.id==='scp'){ui.scope=t.value;updFind()}});
+
+function showResult(){
+  const rows=D.filter((r,i)=>i===0||!isBlankRow(r)),tsv=rows.map(r=>r.map(norm).join('\t')).join('\n');
+  tab='res';$('tabs').innerHTML='<button data-a="tab" data-k="prob">← 고치기로 돌아가기</button>';
+  $('panel').innerHTML=`<h2>③ 결과 받기</h2><p class="empty">${rows.length-1}줄이 나왔어요. 원본 파일은 그대로예요.</p><div class="tools"><button class="go" id="cp">엑셀에 붙여넣기용으로 복사</button></div><p class="empty" id="cpm">진짜 앱에서는 [엑셀 파일로 저장]과 [CSV로 저장]도 있어요.</p><textarea class="csv" id="cpt" readonly aria-label="결과">${esc(tsv)}</textarea>`;
+  $('cp').onclick=()=>{const ta=$('cpt');const ok=()=>{$('cpm').textContent='복사했어요. 엑셀에서 Ctrl+V 하세요.'};const fb=()=>{ta.select();try{document.execCommand('copy')?ok():$('cpm').textContent='글을 길게 눌러 직접 복사하세요.'}catch(_){$('cpm').textContent='글을 길게 눌러 직접 복사하세요.'}};
+    navigator.clipboard?navigator.clipboard.writeText(tsv).then(ok).catch(fb):fb()};
+}
+renderAll();toast('이상한 곳은 주황색 칸으로 보여요. 칸을 눌러 보세요.');
+</script>
