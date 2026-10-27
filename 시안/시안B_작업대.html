@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>월 실적 도우미 — 시안 B 한 화면 작업대</title>
+<style>
+:root{
+  --bg:#0e1315; --text:#e8eeee; --sub:#8fa0a3; --line:#243134; --line2:#33444a;
+  --amber:#ffb224; --amber-ink:#1b1300; --mint:#5fd4b0; --red:#ff7a6b; --hl:rgba(255,178,36,.2); --soft:rgba(255,255,255,.04);
+  --c1:#ffb224; --c2:#5fd4b0; --c3:#ffb224;
+  --sans:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.app{display:grid;grid-template-rows:auto 1fr;height:100vh;min-height:640px}
+
+/* 위 줄 */
+.top{display:flex;align-items:center;gap:28px;padding:0 22px;height:60px;border-bottom:1px solid var(--line);flex-wrap:nowrap}
+.logo{font-weight:800;font-size:19px;letter-spacing:-.01em;white-space:nowrap}
+.logo b{color:var(--amber)}
+.seg{display:flex;border:1px solid var(--line2);border-radius:2px;overflow:hidden}
+.seg button{all:unset;cursor:pointer;padding:6px 16px;font-size:15px;font-weight:700;color:var(--sub);border-right:1px solid var(--line2);transition:background .15s,color .15s;white-space:nowrap}
+.seg button:last-child{border-right:none}
+.seg button:hover{color:var(--text);background:var(--soft)}
+.seg button[aria-pressed="true"]{background:var(--amber);color:var(--amber-ink)}
+.seg button:focus-visible{outline:2px solid var(--text);outline-offset:-2px}
+.local{margin-left:auto;font-size:14px;color:var(--sub);white-space:nowrap}
+.local::before{content:"";display:inline-block;width:8px;height:8px;background:var(--mint);margin-right:8px;animation:blink 2.4s infinite}
+@keyframes blink{50%{opacity:.35}}
+
+/* 세 칸 */
+.main{display:grid;grid-template-columns:320px minmax(0,1fr) 440px;min-height:0}
+.col{min-height:0;overflow:auto;padding:20px 22px 40px}
+.col+.col{border-left:1px solid var(--line)}
+.lab{font-size:13px;font-weight:800;letter-spacing:.14em;color:var(--amber);margin:0 0 10px;text-transform:uppercase}
+.lab em{font-style:normal;color:var(--sub);letter-spacing:.04em;font-weight:600;margin-left:8px}
+.sec+.sec{margin-top:30px;padding-top:24px;border-top:1px solid var(--line)}
+
+textarea{width:100%;height:132px;resize:vertical;background:transparent;color:var(--text);border:1px solid var(--line2);padding:10px 12px;font:12.5px/1.55 var(--mono);border-radius:2px;white-space:pre;overflow:auto}
+textarea:focus{outline:2px solid var(--amber);outline-offset:1px}
+.msg{color:var(--red);font-size:14px;min-height:1.4em;margin:6px 0 0}
+.lnk{all:unset;cursor:pointer;font-weight:700;font-size:14px;color:var(--amber);background:linear-gradient(currentColor,currentColor) 0 100%/0 2px no-repeat;transition:background-size .25s;padding-bottom:2px}
+.lnk:hover,.lnk:focus-visible{background-size:100% 2px}
+.btn{all:unset;cursor:pointer;background:var(--amber);color:var(--amber-ink);font-weight:800;padding:8px 18px;border-radius:2px;font-size:15px;transition:transform .12s,filter .15s}
+.btn:hover{filter:brightness(1.1)}.btn:active{transform:translateY(1px)}.btn:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+
+/* 규칙 스위치 */
+.rule{display:flex;gap:12px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.rule input{position:absolute;opacity:0}
+.sw{flex:none;width:34px;height:18px;border:1px solid var(--line2);border-radius:2px;position:relative;transition:background .2s,border-color .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:12px;height:12px;background:var(--sub);transition:transform .2s,background .2s}
+.rule input:checked+.sw{background:var(--hl);border-color:var(--amber)}
+.rule input:checked+.sw::after{transform:translateX(16px);background:var(--amber)}
+.rule input:focus-visible+.sw{outline:2px solid var(--text);outline-offset:2px}
+.rule span.t{flex:1;font-size:15px;line-height:1.4}
+.rule span.c{font:600 13px var(--mono);color:var(--sub)}
+.rule:hover span.t{color:var(--amber)}
+.note{font-size:14px;color:var(--sub);margin-top:12px}
+.note b{color:var(--amber)}
+
+/* 가운데 표 */
+.strip{display:flex;gap:30px;align-items:baseline;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.strip div{display:flex;gap:8px;align-items:baseline}
+.strip b{font:800 28px/1 var(--mono);color:var(--text)}
+.strip span{font-size:14px;color:var(--sub)}
+.tbox{margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th{position:sticky;top:-20px;background:var(--bg);text-align:left;font-size:12.5px;font-weight:800;letter-spacing:.1em;color:var(--sub);padding:12px 10px 8px;border-bottom:2px solid var(--line2);white-space:nowrap;z-index:1}
+td{padding:6px 10px;border-bottom:1px solid var(--line);white-space:nowrap;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+td.s{font-family:var(--sans)}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--soft)}
+td.chg{position:relative;color:var(--amber);background:var(--hl);cursor:help}
+tr.dup td{color:#566669;text-decoration:line-through;background:transparent}
+.leg{font-size:13.5px;color:var(--sub);margin:12px 0 0}
+.leg i{font-style:normal;color:var(--amber);background:var(--hl);padding:0 5px}
+#tip{position:fixed;z-index:9;pointer-events:none;background:var(--text);color:var(--bg);font-size:13.5px;padding:5px 10px;border-radius:2px;opacity:0;transition:opacity .1s;max-width:320px}
+
+/* 오른쪽 결과 */
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.kpi{padding-right:12px}
+.kpi+.kpi{padding-left:14px;border-left:1px solid var(--line)}
+.kpi span{display:block;font-size:13px;color:var(--sub)}
+.kpi b{display:block;font:800 25px/1.25 var(--mono);letter-spacing:-.03em;margin-top:2px;transition:color .3s}
+.kpi small{display:block;font-size:12.5px;color:var(--sub);min-height:1.5em;font-family:var(--sans)}
+.kpi.diff b{color:var(--red)}
+.kpi.diff small{color:var(--red)}
+.key{display:flex;gap:16px;font-size:13.5px;color:var(--sub);margin:0 0 4px}
+.key i{display:inline-block;width:10px;height:10px;margin-right:6px}
+.fig+.fig{margin-top:16px}
+.bar{transition:opacity .15s}
+svg:hover .bar{opacity:.55}svg .bar:hover{opacity:1}
+svg .bar{animation:grow .6s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:bottom}
+@keyframes grow{from{transform:scaleY(0)}to{transform:none}}
+.tabs{display:flex;gap:24px;border-bottom:1px solid var(--line);margin:0 0 14px}
+.tabs button{all:unset;cursor:pointer;padding:4px 0 9px;font-weight:700;font-size:15px;color:var(--sub);position:relative}
+.tabs button::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--amber);transform:scaleX(0);transform-origin:left;transition:transform .25s}
+.tabs button:hover{color:var(--text)}
+.tabs button[aria-selected="true"]{color:var(--text)}
+.tabs button[aria-selected="true"]::after,.tabs button:hover::after{transform:scaleX(1)}
+.tabs button:focus-visible{outline:2px solid var(--amber);outline-offset:2px}
+.doc ul{margin:0 0 12px;padding-left:20px}.doc li{margin:7px 0;font-size:15.5px}
+.num{border-bottom:2px dotted var(--amber);cursor:help;color:var(--text);transition:background .15s}
+.num:hover{background:var(--hl)}
+pre.q{white-space:pre-wrap;word-break:keep-all;font:13px/1.65 var(--mono);border:1px solid var(--line2);padding:12px 14px;margin:0 0 12px;max-height:320px;overflow:auto;border-radius:2px;color:#cfd9d9}
+.row{display:flex;gap:18px;align-items:center}
+.ok{color:var(--mint);font-weight:700;font-size:14px}
+.chk{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:14px;line-height:1.5}
+.chk input{position:absolute;opacity:0}
+.chk .box{flex:none;width:18px;height:18px;border:1.5px solid var(--sub);margin-top:2px;display:grid;place-items:center;border-radius:2px;transition:background .15s,border-color .15s}
+.chk .box::after{content:"";width:8px;height:4px;border-left:2.5px solid var(--amber-ink);border-bottom:2.5px solid var(--amber-ink);transform:rotate(-45deg) scale(0);margin-top:-2px;transition:transform .15s}
+.chk input:checked+.box{background:var(--mint);border-color:var(--mint)}
+.chk input:checked+.box::after{transform:rotate(-45deg) scale(1)}
+.chk input:focus-visible+.box{outline:2px solid var(--text);outline-offset:2px}
+.chk .calc{display:block;font:12px var(--mono);color:var(--sub)}
+
+/* 좁은 화면 */
+@media (max-width:1180px){
+  .app{height:auto}
+  .main{grid-template-columns:minmax(0,1fr)}
+  .col{overflow:visible}
+  .col+.col{border-left:none;border-top:1px solid var(--line)}
+  th{top:0}
+  .tbox{max-height:420px;overflow:auto}
+  .top{height:auto;padding:12px 16px;flex-wrap:wrap;gap:12px 20px}
+  .local{margin-left:0}
+}
+@media (max-width:520px){
+  .kpis{grid-template-columns:1fr}.kpi+.kpi{padding-left:0;border-left:none;border-top:1px solid var(--line);margin-top:10px;padding-top:10px}
+  .seg button{padding:6px 10px;font-size:14px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="logo">월 실적 <b>도우미</b></div>
+    <div class="seg" id="seg" role="group" aria-label="어떤 표를 볼까요"></div>
+    <div class="local">내 컴퓨터 안에서만 계산 중 · 인터넷 전송 없음</div>
+  </header>
+
+  <div class="main">
+    <!-- 왼쪽: 붙여넣기 + 규칙 -->
+    <section class="col" aria-label="붙여넣기와 정리 규칙">
+      <div class="sec">
+        <p class="lab">① 붙여넣기 <em>엑셀 표를 복사해서</em></p>
+        <textarea id="paste" spellcheck="false" aria-label="엑셀에서 복사한 표"></textarea>
+        <p class="msg" id="msg"></p>
+        <div class="row"><button class="lnk" id="reset">샘플 처음 상태로</button></div>
+      </div>
+      <div class="sec">
+        <p class="lab">① 정리 규칙 <em>끄면 숫자가 달라져요</em></p>
+        <div id="rules"></div>
+        <p class="note" id="rulenote"></p>
+      </div>
+    </section>
+
+    <!-- 가운데: 정리된 표 -->
+    <section class="col" aria-label="정리된 표">
+      <div class="strip" id="strip"></div>
+      <div class="tbox" id="tbox"></div>
+      <p class="leg"><i>고친 칸</i>에 마우스를 올리면 원래 모양이 보여요. <s>줄 그은 줄</s>은 똑같아서 한 번만 센 줄이에요.</p>
+    </section>
+
+    <!-- 오른쪽: 합계·그래프·보고 -->
+    <section class="col" aria-label="결과">
+      <div class="sec">
+        <p class="lab">① 3분기 합계</p>
+        <div class="kpis" id="kpis"></div>
+      </div>
+      <div class="sec">
+        <p class="lab">② 그래프</p>
+        <div class="fig"><div class="key"><span><i style="background:var(--c1)"></i>수출</span><span><i style="background:var(--c2)"></i>내수</span><span style="margin-left:auto">월별 매출</span></div><div id="fig1"></div></div>
+        <div class="fig"><div class="key"><span>라인별 불량률</span></div><div id="fig2"></div></div>
+      </div>
+      <div class="sec">
+        <p class="lab">② 질문 · ③ 보고</p>
+        <div class="tabs" role="tablist" id="rtabs">
+          <button role="tab" aria-selected="true" data-t="rep">③ 보고 초안</button>
+          <button role="tab" aria-selected="false" data-t="chk">③ 숫자 검사</button>
+          <button role="tab" aria-selected="false" data-t="ai">② AI 질문</button>
+        </div>
+        <div id="pane"></div>
+      </div>
+    </section>
+  </div>
+</div>
+<div id="tip"></div>
+
+<script src="data.js"></script>
+<script src="core.js"></script>
+<script>
+(function(){
+  const S = window.SNC, $ = (q, r=document) => r.querySelector(q), $$ = (q, r=document) => [...r.querySelectorAll(q)];
+  const raw = Object.assign({}, window.SNC_RAW);
+  const names = {sales:'매출·수출입', purchase:'구매', defect:'생산·불량'};
+  const opts = Object.assign({}, S.DEFAULTS);
+  let cur = 'sales', tab = 'rep';
+  let C = {}, SUM = {}, BASE = {}, R = [];
+
+  function recompute(){
+    for (const k of Object.keys(raw)) {
+      C[k] = S.clean(raw[k], opts); SUM[k] = S.summarize(C[k]);
+      BASE[k] = S.summarize(S.clean(raw[k]));            // 규칙을 모두 켠 기준 숫자
+    }
+    R = S.buildReport(SUM);
+  }
+
+  /* 위 줄: 표 고르기 */
+  function renderSeg(){
+    $('#seg').innerHTML = Object.keys(names).map(k=>`<button aria-pressed="${k===cur}" data-k="${k}">${names[k]}</button>`).join('');
+    $$('#seg button').forEach(b=>b.onclick=()=>{ cur=b.dataset.k; $('#msg').textContent=''; $('#paste').value=raw[cur]; renderSeg(); renderTable(); });
+  }
+
+  /* 왼쪽: 붙여넣기·규칙 */
+  function onPaste(){
+    const v = $('#paste').value, p = S.parse(v);
+    if (!p){ $('#msg').textContent = v.trim()? '첫 줄(일자, 거래처 …)까지 같이 복사해 주세요.' : ''; return; }
+    $('#msg').textContent = '';
+    if (p.kind !== cur){ cur = p.kind; renderSeg(); }
+    raw[cur] = v; update();
+  }
+  function renderRules(){
+    const c = C[cur];
+    $('#rules').innerHTML = Object.keys(S.RULE_LABEL).map(k=>{
+      const hasHere = k==='fill'? cur==='purchase' : k==='line'? cur==='defect' : k==='num'||k==='dup'? true : true;
+      const n = c.counts[k];
+      return `<label class="rule"><input type="checkbox" data-r="${k}" ${opts[k]?'checked':''}><span class="sw"></span><span class="t">${S.RULE_LABEL[k]}</span><span class="c">${opts[k]?n+'곳':'꺼짐'}</span></label>`;
+    }).join('');
+    $$('#rules input').forEach(i=>i.onchange=()=>{ opts[i.dataset.r]=i.checked; update(); });
+    const off = Object.keys(opts).filter(k=>!opts[k]);
+    $('#rulenote').innerHTML = off.length ? `<b>${off.length}개 규칙을 껐어요.</b> 오른쪽 합계가 어떻게 달라지는지 보세요.` : '규칙을 모두 켠 상태예요 (추천).';
+  }
+
+  /* 가운데: 표 */
+  const tip = $('#tip');
+  document.addEventListener('mousemove', e=>{
+    const td = e.target.closest && e.target.closest('td.chg');
+    const nm = e.target.closest && e.target.closest('.num');
+    if (td){ tip.textContent = '원래 모양: ' + (td.dataset.from===''?'(빈칸)':td.dataset.from); }
+    else if (nm){ tip.textContent = '계산: ' + nm.dataset.calc; }
+    else { tip.style.opacity=0; return; }
+    tip.style.left = Math.min(e.clientX+14, innerWidth-340)+'px'; tip.style.top = (e.clientY+18)+'px'; tip.style.opacity=1;
+  });
+  function renderTable(){
+    const c = C[cur];
+    const changed = c.counts.trim+c.counts.date+c.counts.num+c.counts.line+c.counts.fill;
+    $('#strip').innerHTML = `<div><b>${c.kept}</b><span>줄 사용 (전체 ${c.total})</span></div><div><b>${changed}</b><span>칸 고침</span></div><div><b>${c.counts.dup}</b><span>줄 뺌</span></div>${c.counts.fill?`<div><b>${c.counts.fill}</b><span>칸 채움</span></div>`:''}`;
+    const types = S.SHEETS[cur].types;
+    let h = `<table><thead><tr>${c.header.map((x,i)=>`<th class="${types[i]==='num'?'r':''}">${x}</th>`).join('')}</tr></thead><tbody>`;
+    c.rows.forEach(r=>{
+      h += `<tr class="${r.dup?'dup':''}">` + r.cells.map((x,i)=>{
+        const isNum = types[i]==='num';
+        const v = isNum && x.v!=='' && !isNaN(x.v) ? Number(x.v).toLocaleString('ko-KR') : x.v;
+        const chg = x.kinds.length && !r.dup;
+        return `<td class="${isNum?'r':'s'} ${chg?'chg':''}" ${chg?`data-from="${x.raw.replace(/"/g,'&quot;')}"`:''}>${v===''?'—':v}</td>`;
+      }).join('') + '</tr>';
+    });
+    $('#tbox').innerHTML = h + '</tbody></table>';
+  }
+
+  /* 오른쪽 */
+  function kpi(label, val, base, unit){
+    const diff = val!==base;
+    return `<div class="kpi ${diff?'diff':''}"><span>${label}</span><b>${unit==='%'?S.pct(val):S.won(val/ (unit==='만'?1:1))}</b><small>${diff?'규칙 켰을 때 '+(unit==='%'?S.pct(base):S.won(base)):'&nbsp;'}</small></div>`;
+  }
+  function renderRight(){
+    const a=SUM.sales,p=SUM.purchase,d=SUM.defect, ba=BASE.sales,bp=BASE.purchase,bd=BASE.defect;
+    $('#kpis').innerHTML = kpi('매출(원)', a.total.합계, ba.total.합계) + kpi('구매(원)', p.total, bp.total) + kpi('불량률', d.total.rate, bd.total.rate, '%');
+    $('#fig1').innerHTML = S.chartBars(a.months, ['수출','내수'], ['var(--c1)','var(--c2)'], {w:396,h:210});
+    $('#fig2').innerHTML = S.chartHBars(d.lines, 'rate', 'k', 'var(--c3)', {w:396, fmt:v=>S.pct(v), max:0.05, rowH:30});
+    renderPane();
+  }
+  const numRe = /([0-9][0-9,]*(?:\.[0-9]+)?(?:원|%))/g;
+  function renderPane(){
+    $$('#rtabs button').forEach(b=>b.setAttribute('aria-selected', b.dataset.t===tab));
+    let h = '';
+    if (tab==='rep'){
+      h = `<div class="doc"><ul>${R.map(r=>`<li>${r.text.replace(numRe,m=>`<span class="num" data-calc="${r.calc.replace(/"/g,'&quot;')}">${m}</span>`)}</li>`).join('')}</ul></div><div class="row"><button class="btn" id="cp">초안 복사</button><span class="ok" id="cpm"></span></div>`;
+    } else if (tab==='chk'){
+      h = `<div>${R.map((r,i)=>`<label class="chk"><input type="checkbox"><span class="box"></span><span>${r.text}<span class="calc">${r.calc}</span></span></label>`).join('')}</div><p class="ok" id="allok" style="margin-top:12px"></p>`;
+    } else {
+      h = `<pre class="q">${S.buildPrompt(SUM).replace(/</g,'&lt;')}</pre><div class="row"><button class="btn" id="cp">질문 복사</button><span class="ok" id="cpm"></span></div><p class="note">거래처 이름은 A, B, C로 바뀌어 있어요.</p>`;
+    }
+    $('#pane').innerHTML = h;
+    const cp = $('#cp'); if (cp) cp.onclick = ()=>copy(tab==='rep' ? '3분기 월 실적 보고 (초안)\n'+R.map(r=>'- '+r.text).join('\n') : S.buildPrompt(SUM), $('#cpm'));
+    if (tab==='chk') $$('#pane .chk input').forEach(i=>i.onchange=()=>{ const all=$$('#pane .chk input'); $('#allok').textContent = all.every(x=>x.checked)?'모든 숫자를 확인했어요 ✓':`${all.filter(x=>x.checked).length} / ${all.length} 확인`; });
+  }
+  $$('#rtabs button').forEach(b=>b.onclick=()=>{ tab=b.dataset.t; renderPane(); });
+  function copy(text, el){
+    const ok = ()=>{ el.textContent='복사했어요 ✓'; setTimeout(()=>el.textContent='',2200); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(ok, fb); else fb();
+    function fb(){ const t=document.createElement('textarea'); t.value=text; document.body.appendChild(t); t.select(); try{document.execCommand('copy'); ok();}catch(e){el.textContent='선택해서 직접 복사해 주세요';} t.remove(); }
+  }
+
+  function update(){ recompute(); renderRules(); renderTable(); renderRight(); }
+  $('#paste').addEventListener('input', ()=>{ clearTimeout(window.__t); window.__t=setTimeout(onPaste,120); });
+  $('#reset').onclick = ()=>{ raw[cur]=window.SNC_RAW[cur]; $('#paste').value=raw[cur]; $('#msg').textContent=''; Object.assign(opts, S.DEFAULTS); update(); };
+  $('#paste').value = raw[cur]; renderSeg(); update();
+})();
+</script>
+</body>
+</html>

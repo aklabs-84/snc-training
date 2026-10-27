@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>월 실적 도우미 — 시안 C 단계 안내+규칙 스위치</title>
+<style>
+:root{
+  --bg:#f4efe4; --text:#1f2430; --sub:#5d6270; --line:#d3caB5; --ink:#1f4e8c; --ink-text:#fff;
+  --hl:#fff0a0; --del:#a9a39a; --ok:#2f7a4f; --warn:#a4372a; --soft:rgba(31,36,48,.045);
+  --c1:#1f4e8c; --c2:#c58b2b; --c3:#2f7a4f;
+  --serif:"Noto Serif KR","Batang","AppleMyungjo","Nanum Myeongjo",serif;
+  --sans:"Pretendard Variable",Pretendard,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#1b1d23; --text:#ece8dc; --sub:#a6a79f; --line:#3a3d46; --ink:#8fb6ee; --ink-text:#10151f;
+  --hl:#6a5a14; --del:#6d6e70; --ok:#7fd1a0; --warn:#ff9c8e; --soft:rgba(255,255,255,.05);
+  --c1:#8fb6ee; --c2:#e0b158; --c3:#7fd1a0;
+}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--text);font:18px/1.75 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding:28px 24px 120px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* 위쪽: 이름 + 단계 */
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap}
+.brand{font:700 22px/1.2 var(--serif);letter-spacing:-.01em}
+.brand small{font:500 15px var(--sans);color:var(--sub);margin-left:10px}
+.rail{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin:26px 0 8px;border-top:2px solid var(--text);position:relative}
+.rail button{all:unset;cursor:pointer;padding:14px 8px 12px 0;display:block;position:relative}
+.rail .n{font:700 15px var(--sans);color:var(--sub);letter-spacing:.08em;display:block}
+.rail .t{font:700 19px/1.35 var(--serif);display:block;margin-top:2px}
+.rail button:hover .t{color:var(--ink)}
+.rail button[aria-current="step"] .n{color:var(--ink)}
+.rail button.done .n::after{content:" ✓";color:var(--ok)}
+.rail .bar{position:absolute;top:-2px;left:0;height:2px;background:var(--ink);transition:width .45s cubic-bezier(.2,.7,.2,1)}
+.rail button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+/* 본문 */
+.step{display:none}
+.step.on{display:block;animation:in .42s cubic-bezier(.2,.7,.2,1)}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+h1{word-break:keep-all;font:700 clamp(28px,4.4vw,38px)/1.3 var(--serif);margin:34px 0 8px;letter-spacing:-.02em}
+.lead{color:var(--sub);margin:0 0 26px;max-width:640px}
+h2{font:700 21px/1.4 var(--serif);margin:44px 0 10px}
+.tabs{display:flex;gap:26px;border-bottom:1px solid var(--line);margin:8px 0 18px;flex-wrap:wrap}
+.tabs button{all:unset;cursor:pointer;padding:6px 0 10px;font-weight:700;color:var(--sub);position:relative}
+.tabs button::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:3px;background:var(--ink);transform:scaleX(0);transform-origin:left;transition:transform .25s}
+.tabs button:hover{color:var(--text)}
+.tabs button[aria-selected="true"]{color:var(--text)}
+.tabs button[aria-selected="true"]::after,.tabs button:hover::after{transform:scaleX(1)}
+.tabs button:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+textarea{width:100%;min-height:150px;resize:vertical;border:1px solid var(--line);background:transparent;color:var(--text);padding:12px 14px;font:14px/1.6 var(--mono);border-radius:2px;white-space:pre;overflow:auto}
+textarea:focus{outline:2px solid var(--ink);outline-offset:1px}
+.row{display:flex;gap:22px;align-items:center;flex-wrap:wrap;margin:12px 0 4px}
+.btn{all:unset;cursor:pointer;background:var(--ink);color:var(--ink-text);font-weight:700;padding:10px 22px;border-radius:2px;transition:transform .12s,filter .15s}
+.btn:hover{filter:brightness(1.12)}.btn:active{transform:translateY(1px) scale(.99)}
+.btn:focus-visible{outline:2px solid var(--text);outline-offset:2px}
+.lnk{all:unset;cursor:pointer;font-weight:700;color:var(--ink);background:linear-gradient(currentColor,currentColor) 0 100%/0 2px no-repeat;transition:background-size .25s;padding-bottom:2px}
+.lnk:hover,.lnk:focus-visible{background-size:100% 2px}
+.hint{color:var(--sub);font-size:16px}
+.warn{color:var(--warn);font-size:16px}
+
+/* 정리 규칙 스위치 */
+.rules{margin:30px 0 0}
+.rules h2{margin-top:0}
+.rule{display:flex;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer;user-select:none}
+.rule input{position:absolute;opacity:0}
+.sw{flex:none;width:48px;height:26px;border:2px solid var(--text);border-radius:2px;position:relative;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:16px;height:16px;background:var(--text);transition:transform .2s,background .2s}
+.rule input:checked+.sw{background:var(--ink);border-color:var(--ink)}
+.rule input:checked+.sw::after{transform:translateX(22px);background:var(--ink-text)}
+.rule input:focus-visible+.sw{outline:2px solid var(--ink);outline-offset:3px}
+.rule .t{flex:1}
+.rule .c{font-size:16px;color:var(--sub);white-space:nowrap;font-variant-numeric:tabular-nums}
+.rule:hover .t{color:var(--ink)}
+.diff{margin:18px 0 0;padding:14px 0;border-top:2px solid var(--text);font-size:19px}
+.diff.bad{color:var(--warn);font-weight:700}
+.diff.good{color:var(--ok);font-weight:700}
+.offnote{color:var(--warn);font-size:16px;margin:0 0 14px;min-height:0}
+/* 정리 결과 */
+.sum{display:flex;gap:40px;flex-wrap:wrap;margin:26px 0 14px;padding:18px 0;border-top:2px solid var(--text);border-bottom:1px solid var(--line)}
+.sum div{min-width:120px}
+.sum b{display:block;font:800 40px/1.1 var(--sans);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.sum span{font-size:15px;color:var(--sub)}
+.tablebox{max-height:380px;overflow:auto;border-bottom:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th{position:sticky;top:0;background:var(--bg);text-align:left;font-size:14px;color:var(--sub);letter-spacing:.04em;padding:9px 10px;border-bottom:2px solid var(--text);white-space:nowrap}
+td{padding:7px 10px;border-bottom:1px solid var(--line);white-space:nowrap;font-variant-numeric:tabular-nums}
+td.r,th.r{text-align:right}
+tbody tr{transition:background .12s}
+tbody tr:hover{background:var(--soft)}
+td.chg{background:var(--hl);cursor:help;border-radius:1px}
+tr.dup td{color:var(--del);text-decoration:line-through;background:transparent}
+.legend{font-size:15px;color:var(--sub);margin:10px 0 0}
+.legend mark{background:var(--hl);color:var(--text);padding:0 5px}
+#tip{position:fixed;z-index:9;pointer-events:none;background:var(--text);color:var(--bg);font-size:14px;padding:5px 10px;border-radius:2px;opacity:0;transition:opacity .1s;max-width:300px}
+
+.agg{margin-top:34px}
+.agg table td,.agg table th{font-size:17px}
+.agg tfoot td{font-weight:800;border-top:2px solid var(--text);border-bottom:none}
+.next{display:flex;justify-content:flex-end;gap:28px;margin-top:44px;padding-top:16px;border-top:1px solid var(--line)}
+
+/* 그래프 */
+.fig{margin:6px 0 4px;max-width:680px}
+.cap{font-size:15px;color:var(--sub);margin:4px 0 0}
+.key{display:flex;gap:18px;font-size:15px;color:var(--sub);margin:4px 0 6px}
+.key i{display:inline-block;width:12px;height:12px;margin-right:6px;vertical-align:-1px}
+.bar{transition:opacity .15s}svg:hover .bar{opacity:.55}svg .bar:hover{opacity:1}
+.bar{animation:grow .7s cubic-bezier(.2,.7,.2,1) both;transform-box:fill-box;transform-origin:bottom}
+@keyframes grow{from{transform:scaleY(0)}to{transform:none}}
+
+pre.q{white-space:pre-wrap;word-break:keep-all;font:14.5px/1.7 var(--mono);border:1px solid var(--line);padding:16px 18px;margin:8px 0;max-height:340px;overflow:auto;border-radius:2px}
+
+/* 보고 */
+.paper{border:1px solid var(--line);padding:30px 34px;margin:10px 0 0;background:rgba(255,255,255,.35)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .paper{background:rgba(255,255,255,.03)}}
+.paper h3{font:700 24px/1.4 var(--serif);margin:0 0 4px}
+.paper .meta{color:var(--sub);font-size:15px;margin-bottom:16px}
+.paper ul{margin:0;padding-left:22px}.paper li{margin:8px 0}
+.num{border-bottom:2px dotted var(--ink);cursor:help;transition:background .15s}
+.num:hover{background:var(--hl)}
+.chk{display:flex;gap:14px;align-items:flex-start;padding:12px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.chk input{position:absolute;opacity:0}
+.chk .box{flex:none;width:22px;height:22px;border:2px solid var(--text);margin-top:4px;display:grid;place-items:center;border-radius:2px;transition:background .15s}
+.chk .box::after{content:"";width:10px;height:5px;border-left:3px solid var(--ink-text);border-bottom:3px solid var(--ink-text);transform:rotate(-45deg) scale(0);margin-top:-3px;transition:transform .15s}
+.chk input:checked+.box{background:var(--ink);border-color:var(--ink)}
+.chk input:checked+.box::after{transform:rotate(-45deg) scale(1)}
+.chk input:focus-visible+.box{outline:2px solid var(--ink);outline-offset:2px}
+.chk .calc{display:block;font:14px/1.6 var(--mono);color:var(--sub)}
+.chk:hover .calc{color:var(--text)}
+.done-msg{color:var(--ok);font-weight:700;min-height:1.6em}
+
+@media (max-width:640px){
+  .wrap{padding:20px 16px 90px}
+  .rail .t{font-size:16px}.rail .n{font-size:13px}
+  .sum{gap:22px}.sum b{font-size:32px}
+  .paper{padding:20px 18px}
+  .tablebox{max-height:320px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">월 실적 도우미<small>에스앤씨 · 3분기 (7~9월)</small></div>
+    <span class="hint">내 컴퓨터 안에서만 계산해요. 인터넷으로 보내지 않아요.</span>
+  </div>
+
+  <nav class="rail" aria-label="진행 단계">
+    <div class="bar" id="railbar"></div>
+    <button data-go="0"><span class="n">① 표 정리</span><span class="t">붙여넣고 합계 내기</span></button>
+    <button data-go="1"><span class="n">② 분석</span><span class="t">그래프와 AI 질문</span></button>
+    <button data-go="2"><span class="n">③ 보고</span><span class="t">경영진 보고 초안</span></button>
+  </nav>
+
+  <!-- ① -->
+  <section class="step" id="s0">
+    <h1>엑셀 표를 붙여넣으면 깨끗하게 정리해 드려요</h1>
+    <p class="lead">엑셀에서 표를 드래그해 복사(Ctrl+C)한 뒤 아래 칸에 붙여넣기(Ctrl+V) 하세요. 첫 줄(제목 줄)까지 같이 복사해야 해요.</p>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <textarea id="paste" spellcheck="false" aria-label="엑셀에서 복사한 표"></textarea>
+    <div class="row">
+      <button class="btn" id="run">정리하기</button>
+      <button class="lnk" id="reset">샘플 처음 상태로</button>
+      <span class="warn" id="msg"></span>
+    </div>
+    <div class="rules">
+      <h2>정리 규칙을 껐다 켜 보세요</h2>
+      <p class="hint" style="margin:0 0 6px">스위치를 끄면 아래 합계가 바로 달라져요. 정리를 안 하면 숫자가 얼마나 틀리는지 직접 보세요.</p>
+      <div id="rules"></div>
+      <div id="diffbox"></div>
+    </div>
+    <div id="result"></div>
+    <div class="next"><button class="lnk" data-go="1">다음: 그래프 보기 →</button></div>
+  </section>
+
+  <!-- ② -->
+  <section class="step" id="s1">
+    <h1>숫자를 그림으로 보고, AI에게 물을 질문을 만들어요</h1>
+    <p class="offnote" id="off2"></p>
+    <p class="lead">거래처·공급처 이름은 A, B, C로 바꿔서 질문에 넣어 드려요. 진짜 이름은 이 화면 밖으로 나가지 않아요.</p>
+    <h2>월별 매출 (수출 + 내수)</h2>
+    <div class="key"><span><i style="background:var(--c1)"></i>수출</span><span><i style="background:var(--c2)"></i>내수</span></div>
+    <div class="fig" id="fig1"></div><p class="cap" id="cap1"></p>
+    <h2>라인별 불량률</h2>
+    <div class="fig" id="fig2"></div><p class="cap" id="cap2"></p>
+    <h2>월별 구매 금액</h2>
+    <div class="fig" id="fig3"></div><p class="cap" id="cap3"></p>
+    <h2>AI에게 보낼 질문</h2>
+    <pre class="q" id="prompt"></pre>
+    <div class="row"><button class="btn" id="copyq">질문 복사하기</button><span class="done-msg" id="copyqmsg"></span></div>
+    <p class="hint">복사한 질문을 ChatGPT나 Gemini에 붙여넣으세요. 답이 오면 숫자는 꼭 다시 확인하세요(③에서 연습해요).</p>
+    <div class="next"><button class="lnk" data-go="0">← 이전</button><button class="lnk" data-go="2">다음: 보고 초안 →</button></div>
+  </section>
+
+  <!-- ③ -->
+  <section class="step" id="s2">
+    <h1>경영진 보고 초안이 만들어졌어요</h1>
+    <p class="offnote" id="off3"></p>
+    <p class="lead">점선 밑줄 친 숫자 위에 마우스를 올리면 어떤 계산에서 나왔는지 보여요. 아래에서 하나씩 확인하고 체크하세요.</p>
+    <div class="paper" id="paper"></div>
+    <div class="row"><button class="btn" id="copyr">초안 복사하기</button><span class="done-msg" id="copyrmsg"></span></div>
+    <h2>숫자 검사 — 내가 직접 확인했나요?</h2>
+    <div id="checks"></div>
+    <p class="done-msg" id="allok"></p>
+    <div class="next"><button class="lnk" data-go="1">← 이전</button><button class="lnk" data-go="0">처음으로</button></div>
+  </section>
+</div>
+<div id="tip"></div>
+
+<script src="data.js"></script>
+<script src="core.js"></script>
+<script>
+(function(){
+  const S = window.SNC, $ = (q, r=document) => r.querySelector(q), $$ = (q, r=document) => [...r.querySelectorAll(q)];
+  const raw = Object.assign({}, window.SNC_RAW);
+  const names = {sales:'매출·수출입', purchase:'구매', defect:'생산·불량'};
+  let cur = 'sales', step = 0, visited = new Set([0]);
+  const opts = Object.assign({}, S.DEFAULTS);
+  let C = {}, SUM = {}, BASE = {};
+
+  function recompute(){
+    for (const k of Object.keys(raw)) { C[k] = S.clean(raw[k], opts); SUM[k] = S.summarize(C[k]); const b = S.clean(raw[k]); BASE[k] = {c:b, s:S.summarize(b)}; }
+  }
+  function countUp(el, to, dur=700){
+    const t0 = performance.now(); const fmt = (v)=>Math.round(v).toLocaleString('ko-KR');
+    if (matchMedia('(prefers-reduced-motion:reduce)').matches){ el.textContent = fmt(to); return; }
+    (function f(t){ const p = Math.min(1,(t-t0)/dur); el.textContent = fmt(to*(1-Math.pow(1-p,3))); if(p<1) requestAnimationFrame(f); })(t0);
+  }
+
+  /* 단계 이동 */
+  function go(n){
+    step = n; visited.add(n);
+    $$('.step').forEach((s,i)=>s.classList.toggle('on', i===n));
+    $$('.rail button').forEach((b,i)=>{ b.setAttribute('aria-current', i===n?'step':'false'); b.classList.toggle('done', visited.has(i) && i!==n && i<n); });
+    $('#railbar').style.width = ((n+1)/3*100)+'%';
+    if (n===0) renderResult(); if (n===1) renderStep2(); if (n===2) renderStep3();
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+  document.addEventListener('click', e=>{ const b=e.target.closest('[data-go]'); if(b) go(+b.dataset.go); });
+
+  /* ① 붙여넣기·정리 */
+  function renderTabs(){
+    $('#tabs').innerHTML = Object.keys(names).map(k=>`<button role="tab" aria-selected="${k===cur}" data-k="${k}">${names[k]}</button>`).join('');
+    $$('#tabs button').forEach(b=>b.onclick=()=>{ cur=b.dataset.k; $('#msg').textContent=''; renderTabs(); $('#paste').value=raw[cur]; renderRules(); renderResult(); });
+  }
+  function onPaste(){
+    const v = $('#paste').value, p = S.parse(v);
+    if (!p){ $('#msg').textContent = v.trim()? '첫 줄(일자, 거래처 …)까지 같이 복사해 주세요.' : ''; return; }
+    $('#msg').textContent = '';
+    if (p.kind !== cur){ cur = p.kind; renderTabs(); }
+    raw[cur] = v; recompute(); renderRules(); renderResult();
+  }
+  const tip = $('#tip');
+  document.addEventListener('mousemove', e=>{
+    const td = e.target.closest && e.target.closest('td.chg');
+    if (!td){ tip.style.opacity=0; return; }
+    tip.textContent = '원래 모양: ' + (td.dataset.from===''?'(빈칸)':JSON.stringify(td.dataset.from).slice(1,-1));
+    tip.style.left = Math.min(e.clientX+14, innerWidth-320)+'px'; tip.style.top = (e.clientY+18)+'px'; tip.style.opacity=1;
+  });
+
+  function mainVal(s, k){ return k==='sales' ? s.total.합계 : k==='purchase' ? s.total : s.total.rate; }
+  function fmtMain(v, k){ return k==='defect' ? S.pct(v) : S.won(v)+'원'; }
+  function offNote(){ const off = Object.keys(opts).filter(k=>!opts[k]).length; const t = off? `정리 규칙 ${off}개를 꺼 둔 상태예요. 숫자가 실제와 다를 수 있어요. ①에서 다시 켤 수 있어요.` : ''; $('#off2').textContent=t; $('#off3').textContent=t; }
+  function renderRules(){
+    const f = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.r : null;
+    $('#rules').innerHTML = Object.keys(S.RULE_LABEL).map(k=>{
+      const n = BASE[cur].c.counts[k];
+      return `<label class="rule"><input type="checkbox" data-r="${k}" ${opts[k]?'checked':''}><span class="sw"></span><span class="t">${S.RULE_LABEL[k]}</span><span class="c">${opts[k]? (n? n+'곳 고침' : '이 표엔 해당 없음') : '꺼짐'}</span></label>`;
+    }).join('');
+    $$('#rules input').forEach(i=>i.onchange=()=>{ opts[i.dataset.r]=i.checked; recompute(); renderRules(); renderResult(); offNote(); });
+    if (f){ const el=$(`#rules input[data-r="${f}"]`); if(el) el.focus(); }
+  }
+  function renderResult(){
+    const c = C[cur], s = SUM[cur]; if(!c) return;
+    const changed = c.counts.trim+c.counts.date+c.counts.num+c.counts.line+c.counts.fill;
+    let h = `<div class="sum">
+      <div><b data-n="${c.kept}">0</b><span>정리한 줄 (전체 ${c.total}줄)</span></div>
+      <div><b data-n="${changed}">0</b><span>모양을 고친 칸</span></div>
+      <div><b data-n="${c.counts.dup}">0</b><span>똑같아서 뺀 줄</span></div>
+      ${c.counts.fill?`<div><b data-n="${c.counts.fill}">0</b><span>채운 빈 금액</span></div>`:''}
+    </div>`;
+    const numCols = new Set(); S.SHEETS[cur].types.forEach((t,i)=>{ if(t==='num') numCols.add(i); });
+    h += `<div class="tablebox"><table><thead><tr>${c.header.map((x,i)=>`<th class="${numCols.has(i)?'r':''}">${x}</th>`).join('')}</tr></thead><tbody>`;
+    c.rows.forEach(r=>{
+      h += `<tr class="${r.dup?'dup':''}">` + r.cells.map((x,i)=>{
+        const v = numCols.has(i) && x.v!=='' && !isNaN(x.v) ? Number(x.v).toLocaleString('ko-KR') : x.v;
+        return `<td class="${numCols.has(i)?'r':''} ${x.kinds.length&&!r.dup?'chg':''}" ${x.kinds.length&&!r.dup?`data-from="${x.raw.replace(/"/g,'&quot;')}"`:''}>${v}</td>`;
+      }).join('') + '</tr>';
+    });
+    h += `</tbody></table></div><p class="legend"><mark>노란 칸</mark>은 모양을 고친 곳이에요(마우스를 올리면 원래 모양). <s>줄 그은 줄</s>은 똑같은 줄이라 한 번만 셌어요.</p>`;
+    /* 합계 */
+    h += `<div class="agg"><h2>${names[cur]} 합계</h2>`;
+    if (cur==='sales'){
+      h += `<table><thead><tr><th>월</th><th class="r">수출(원)</th><th class="r">내수(원)</th><th class="r">합계(원)</th></tr></thead><tbody>${s.months.map(m=>`<tr><td>${S.mlabel(m.m)}</td><td class="r">${S.won(m.수출)}</td><td class="r">${S.won(m.내수)}</td><td class="r">${S.won(m.합계)}</td></tr>`).join('')}</tbody><tfoot><tr><td>3분기</td><td class="r">${S.won(s.total.수출)}</td><td class="r">${S.won(s.total.내수)}</td><td class="r">${S.won(s.total.합계)}</td></tr></tfoot></table>`;
+    } else if (cur==='purchase'){
+      h += `<table><thead><tr><th>월</th><th class="r">구매 금액(원)</th></tr></thead><tbody>${s.months.map(m=>`<tr><td>${S.mlabel(m.m)}</td><td class="r">${S.won(m.합계)}</td></tr>`).join('')}</tbody><tfoot><tr><td>3분기</td><td class="r">${S.won(s.total)}</td></tr></tfoot></table>`;
+    } else {
+      h += `<table><thead><tr><th>라인</th><th class="r">생산(개)</th><th class="r">불량(개)</th><th class="r">불량률</th></tr></thead><tbody>${s.lines.map(l=>`<tr><td>${l.k}</td><td class="r">${S.won(l.prod)}</td><td class="r">${S.won(l.bad)}</td><td class="r">${S.pct(l.rate)}</td></tr>`).join('')}</tbody><tfoot><tr><td>전체</td><td class="r">${S.won(s.total.prod)}</td><td class="r">${S.won(s.total.bad)}</td><td class="r">${S.pct(s.total.rate)}</td></tr></tfoot></table>`;
+    }
+    const mv = mainVal(s,cur), bv = mainVal(BASE[cur].s,cur), lab = cur==='defect'?'불량률':'합계';
+    $('#diffbox').innerHTML = mv===bv ? `<p class="diff good">정리 규칙을 모두 켠 상태예요. 이 ${lab}가 맞는 숫자예요 ✓</p>`
+      : `<p class="diff bad">규칙을 모두 켰을 때 ${lab}는 ${fmtMain(bv,cur)}인데, 지금은 ${fmtMain(mv,cur)}이에요. 정리를 건너뛰면 이만큼 틀려요.</p>`;
+    h += '</div>';
+    $('#result').innerHTML = h;
+    $$('#result .sum b').forEach(b=>countUp(b, +b.dataset.n));
+  }
+
+  /* ② 그래프·질문 */
+  function renderStep2(){
+    const a=SUM.sales, p=SUM.purchase, d=SUM.defect;
+    $('#fig1').innerHTML = S.chartBars(a.months, ['수출','내수'], ['var(--c1)','var(--c2)']);
+    const best = a.months.slice().sort((x,y)=>y.합계-x.합계)[0];
+    $('#cap1').textContent = `${S.mlabel(best.m)}이 ${S.won(best.합계)}원으로 가장 컸어요. 막대에 마우스를 올리면 금액이 보여요.`;
+    $('#fig2').innerHTML = S.chartHBars(d.lines, 'rate', 'k', 'var(--c3)', {fmt:v=>S.pct(v), max:0.05});
+    $('#cap2').textContent = `${d.worst.k}의 불량률이 ${S.pct(d.worst.rate)}로 가장 높아요.`;
+    $('#fig3').innerHTML = S.chartBars(p.months.map(m=>Object.assign({},m,{구매:m.합계})), ['구매'], ['var(--c1)'], {stack:false});
+    $('#cap3').textContent = `3분기 구매는 모두 ${S.won(p.total)}원이에요.`;
+    $('#prompt').textContent = S.buildPrompt(SUM);
+  }
+  function flash(el, msg){ el.textContent = msg; setTimeout(()=>el.textContent='', 2200); }
+  function copy(text, el){
+    const ok = ()=>flash(el,'복사했어요 ✓');
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(ok, fb); else fb();
+    function fb(){ const t=document.createElement('textarea'); t.value=text; document.body.appendChild(t); t.select(); try{document.execCommand('copy'); ok();}catch(e){flash(el,'선택해서 직접 복사해 주세요');} t.remove(); }
+  }
+  $('#copyq').onclick = ()=>copy($('#prompt').textContent, $('#copyqmsg'));
+
+  /* ③ 보고 */
+  let R = [];
+  function renderStep3(){
+    R = S.buildReport(SUM);
+    const numRe = /([0-9][0-9,]*(?:\.[0-9]+)?(?:원|%))/g;
+    $('#paper').innerHTML = `<h3>3분기 월 실적 보고</h3><div class="meta">에스앤씨 · 2026년 7~9월 · 초안</div><ul>${R.map(r=>`<li>${r.text.replace(numRe,(m)=>`<span class="num" data-calc="${r.calc.replace(/"/g,'&quot;')}">${m}</span>`)}</li>`).join('')}</ul>`;
+    $('#checks').innerHTML = R.map((r,i)=>`<label class="chk"><input type="checkbox" data-i="${i}"><span class="box"></span><span>${r.text}<span class="calc">계산: ${r.calc}</span></span></label>`).join('');
+    $('#allok').textContent = '';
+  }
+  document.addEventListener('mousemove', e=>{ const n=e.target.closest&&e.target.closest('.num'); if(!n) return; tip.textContent='계산: '+n.dataset.calc; tip.style.left=Math.min(e.clientX+14,innerWidth-320)+'px'; tip.style.top=(e.clientY+18)+'px'; tip.style.opacity=1; });
+  document.addEventListener('change', e=>{ if(!e.target.matches('.chk input')) return; const all=$$('.chk input'); $('#allok').textContent = all.every(x=>x.checked)? '모든 숫자를 확인했어요. 이제 보고서에 써도 좋아요 ✓' : `${all.filter(x=>x.checked).length} / ${all.length}개 확인함`; });
+  $('#copyr').onclick = ()=>copy('3분기 월 실적 보고 (초안)\n' + R.map(r=>'- '+r.text).join('\n'), $('#copyrmsg'));
+
+  /* 시작 */
+  $('#run').onclick = onPaste;
+  $('#paste').addEventListener('input', ()=>{ clearTimeout(window.__t); window.__t=setTimeout(onPaste,120); });
+  $('#reset').onclick = ()=>{ raw[cur]=window.SNC_RAW[cur]; $('#paste').value=raw[cur]; $('#msg').textContent=''; Object.assign(opts,S.DEFAULTS); recompute(); renderRules(); renderResult(); offNote(); };
+  recompute(); renderTabs(); $('#paste').value = raw[cur]; renderRules(); offNote(); go(0);
+})();
+</script>
+</body>
+</html>

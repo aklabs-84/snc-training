@@ -1,0 +1,655 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>① 엑셀 정리·집계 도우미</title><style>:root{--bg:#f6f1e7;--paper:#fffdf8;--text:#2a2620;--sub:#6b6458;--line:#ded6c5;--accent:#1f5f4a;--accent-ink:#fff;--warn:#a4411f;--hl:#fff1b8;--c1:#1f5f4a;--c2:#c9772b;--c3:#3d6fa3;--c4:#8a5a9b;--c5:#a4411f;--c6:#6b7d2f}
+@media (prefers-color-scheme:dark){:root{--bg:#1b1a17;--paper:#24221e;--text:#efe9dc;--sub:#a8a090;--line:#3a362e;--accent:#6fcaa5;--accent-ink:#10231b;--warn:#f08a64;--hl:#4a4015;--c1:#6fcaa5;--c2:#f0a35c;--c3:#7fb0e0;--c4:#c79be0;--c5:#f08a64;--c6:#b5c968}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:18px/1.7 -apple-system,"Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:0 20px 80px}
+header.top{padding:28px 0 8px}
+header.top .step{color:var(--sub);font-size:16px;margin:0}
+header.top h1{font-size:30px;line-height:1.3;margin:2px 0 6px;letter-spacing:-.02em}
+header.top p.lead{margin:0;color:var(--sub)}
+#subtabs{display:flex;gap:4px;overflow-x:auto;border-bottom:2px solid var(--line);margin:18px 0 26px;padding-bottom:0}
+#subtabs button{flex:0 0 auto;font:inherit;font-size:17px;background:none;border:0;border-bottom:4px solid transparent;margin-bottom:-2px;padding:10px 14px;color:var(--sub);cursor:pointer;white-space:nowrap}
+#subtabs button b{display:inline-block;width:1.5em;height:1.5em;line-height:1.5em;text-align:center;border:1.5px solid var(--sub);border-radius:50%;font-size:14px;margin-right:7px}
+#subtabs button[aria-selected=true]{color:var(--text);border-bottom-color:var(--accent);font-weight:700}
+#subtabs button[aria-selected=true] b{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.sub{display:none}.sub.on{display:block}
+.sub h2{font-size:24px;margin:0 0 6px}
+.sub .why{color:var(--sub);margin:0 0 20px}
+h3{font-size:19px;margin:26px 0 8px}
+.btn,.lnk,.btn2{font:inherit;cursor:pointer;border-radius:6px;padding:11px 20px;border:2px solid var(--accent)}
+.btn{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.btn2{background:transparent;color:var(--accent);font-weight:700}
+.lnk{background:none;border-color:transparent;color:var(--sub);text-decoration:underline}
+.btn:hover,.btn2:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:focus-visible,.btn2:focus-visible,.lnk:focus-visible,select:focus-visible,textarea:focus-visible,input:focus-visible,.drop:focus-visible{outline:3px solid var(--c2);outline-offset:2px}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+#nav{display:flex;justify-content:space-between;align-items:center;margin-top:36px;padding-top:20px;border-top:1px solid var(--line);gap:10px;flex-wrap:wrap}
+.drop{border:2px dashed var(--sub);border-radius:8px;padding:34px 20px;text-align:center;background:var(--paper);cursor:pointer}
+.drop.over{border-color:var(--accent);background:var(--hl)}
+.drop big{display:block;font-size:22px;font-weight:700;margin-bottom:4px}
+.drop small{color:var(--sub);font-size:16px}
+.hint{color:var(--sub);margin:10px 0 0;min-height:1.7em}
+.warn{color:var(--warn);font-weight:600;margin:10px 0 0}
+.or{display:flex;align-items:center;gap:12px;color:var(--sub);margin:20px 0 10px;font-size:16px}.or:before,.or:after{content:"";flex:1;border-top:1px solid var(--line)}
+textarea{width:100%;font:16px/1.6 ui-monospace,Menlo,monospace;background:var(--paper);color:var(--text);border:1.5px solid var(--line);border-radius:6px;padding:12px}
+textarea.big{min-height:220px}
+select{font:inherit;font-size:17px;background:var(--paper);color:var(--text);border:1.5px solid var(--line);border-radius:6px;padding:8px 10px;max-width:100%}
+input[type=text]{font:inherit;background:var(--paper);color:var(--text);border:1.5px solid var(--line);border-radius:6px;padding:8px 10px;width:100%}
+.fld{display:flex;flex-direction:column;gap:4px}.fld span{font-size:16px;color:var(--sub)}.fld[hidden]{display:none}
+.flds{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin:6px 0 14px}
+.samples{display:flex;gap:10px;flex-wrap:wrap}
+.tablebox{overflow:auto;max-height:420px;border:1px solid var(--line);border-radius:6px;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:16px}
+th,td{padding:7px 12px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{background:var(--bg);position:sticky;top:0;font-weight:700}
+.r{text-align:right;font-variant-numeric:tabular-nums}
+tfoot td{font-weight:700;border-top:2px solid var(--text);background:var(--bg)}
+tr.dup td{text-decoration:line-through;color:var(--sub);opacity:.55}
+td.chg{background:var(--hl);cursor:help}
+.typerow th{top:34px;font-weight:400;padding:4px 8px}
+.typerow select{font-size:15px;padding:3px 6px}
+.rule{display:flex;align-items:flex-start;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);cursor:pointer}
+.rule input{position:absolute;opacity:0}
+.rule .sw{flex:0 0 auto;width:46px;height:26px;border-radius:13px;background:var(--line);position:relative;margin-top:2px;transition:background .15s}
+.rule .sw:after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.rule input:checked+.sw{background:var(--accent)}.rule input:checked+.sw:after{left:23px}
+.rule input:focus-visible+.sw{outline:3px solid var(--c2);outline-offset:2px}
+.rule .t{flex:1}.rule .n{color:var(--sub);font-size:16px;display:block}
+#diffbox,.callout{border-left:5px solid var(--c2);background:var(--paper);padding:14px 18px;margin:16px 0}
+.callout.ok{border-color:var(--accent)}.callout.bad{border-color:var(--warn)}
+.big-num{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.big-lab{color:var(--sub);font-size:16px}
+.stats{display:flex;gap:34px;flex-wrap:wrap;margin:12px 0 4px}
+.key{display:flex;gap:16px;flex-wrap:wrap;font-size:16px;margin:6px 0}.key i{display:inline-block;width:14px;height:14px;margin-right:6px;vertical-align:-1px}
+.cap{color:var(--sub);font-size:15px;margin:4px 0}
+.bar:hover{opacity:.75}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 12px}
+.seg label{cursor:pointer}.seg input{position:absolute;opacity:0}
+.seg span{display:inline-block;padding:8px 16px;border:1.5px solid var(--line);border-radius:6px;background:var(--paper)}
+.seg input:checked+span{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
+.seg input:focus-visible+span{outline:3px solid var(--c2);outline-offset:2px}
+.promptbox{position:relative}
+.promptbox textarea{min-height:260px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:10px 0}
+.flash{color:var(--accent);font-weight:700}
+.ai{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px;margin:10px 0}
+.ai a{display:block;border:1.5px solid var(--accent);border-radius:6px;padding:12px 16px;color:var(--accent);font-weight:700;text-decoration:none}
+.ai a:hover{background:var(--accent);color:var(--accent-ink)}
+.ai small{display:block;font-weight:400;color:var(--sub)}
+.ai a:hover small{color:var(--accent-ink)}
+.chk li{margin:6px 0}.chk .ok{color:var(--accent)}.chk .no{color:var(--warn);font-weight:700}
+ol.steps{padding-left:1.4em}ol.steps li{margin:6px 0}
+.doc{background:var(--paper);border:1px solid var(--line);padding:26px 30px;border-radius:4px}
+.doc h1,.doc h2,.doc h3{margin:.8em 0 .3em}.doc p{margin:.5em 0}.doc ul{margin:.4em 0}
+#tip{position:fixed;pointer-events:none;background:var(--text);color:var(--bg);padding:6px 10px;border-radius:4px;font-size:15px;opacity:0;z-index:9;transition:opacity .1s}
+@media (max-width:600px){body{font-size:17px}header.top h1{font-size:25px}.wrap{padding:0 16px 60px}.doc{padding:16px}.btn,.btn2{width:100%;text-align:center}#nav .btn{width:auto}}
+@media print{body{background:#fff;color:#000}header.top,#subtabs,#nav,.noprint{display:none!important}.sub{display:none}.sub.printme{display:block}.doc{border:0;padding:0}}
+</style></head><body><title>① 엑셀 정리·집계 도우미</title>
+<style>
+td[contenteditable]:focus{outline:2px solid var(--c2);outline-offset:-2px;background:var(--paper);cursor:text}
+td[contenteditable]{cursor:text}
+.vgrp{padding:2px 0;margin:8px 0;border-left:4px solid transparent;padding-left:12px}
+.vgrp.sim{border-left-color:var(--c2);background:var(--paper)}
+.vrow{display:flex;gap:10px;align-items:center;padding:3px 0;cursor:pointer}
+.vrow input{width:20px;height:20px;accent-color:var(--accent)}
+.vv{font-family:ui-monospace,Menlo,monospace}
+.vscroll{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:8px 14px;background:var(--bg)}
+details.more{margin:10px 0}details.more summary{cursor:pointer;color:var(--sub);padding:8px 0}
+.found{display:block;color:var(--text);font-size:16px;margin-top:2px}
+.found code,.vv{background:var(--bg);padding:0 5px;border-radius:3px}
+.x{border:0;background:none;color:var(--sub);cursor:pointer;font-size:16px;padding:0 6px}.x:hover{color:var(--warn)}
+</style>
+<div class="wrap">
+<header class="top"><p class="step">앱 ① / 3</p><h1>엑셀 정리·집계 도우미</h1><p class="lead">지저분한 엑셀 표를 올리면 → 자동으로, 내 손으로, AI와 함께 고치고 → 합계까지 내 줍니다.</p></header>
+<div id="subtabs" role="tablist"></div>
+
+<!-- ===== [구역 1] 표 올리기 ===== -->
+<section class="sub">
+<h2>표 올리기</h2><p class="why">매달 쓰는 엑셀 파일을 그대로 올리세요. 첫 줄은 제목 줄이어야 해요.</p>
+<div class="drop" id="drop" tabindex="0" role="button" aria-label="엑셀 파일 올리기">
+  <big>엑셀 파일을 여기로 끌어다 놓으세요</big>
+  <small>또는 이 칸을 눌러 파일 고르기 (.xlsx · .csv) · 파일은 내 컴퓨터 밖으로 나가지 않아요</small>
+  <input type="file" id="file" accept=".xlsx,.csv,.tsv,.txt" hidden>
+</div>
+<p id="msg" class="hint"></p>
+<label class="fld" hidden style="max-width:320px"><span>시트가 여러 개예요. 어느 것을 쓸까요?</span><select id="sheet"></select></label>
+<div class="or">파일이 안 열리면</div>
+<label class="fld"><span>엑셀에서 표를 드래그해 복사(Ctrl+C) → 여기에 붙여넣기 (제목 줄까지)</span><textarea id="paste" placeholder="여기에 붙여넣기"></textarea></label>
+<div class="or">연습용 자료로 해 보기</div>
+<div class="samples" id="samples"><button class="btn2" data-s="sales">매출 (수출입)</button><button class="btn2" data-s="purchase">구매</button><button class="btn2" data-s="defect">생산·불량</button></div>
+
+<div id="preview" hidden>
+<h3>이렇게 읽었어요 <span class="cap">(위에서 6줄만 보여 드려요)</span></h3>
+<p class="cap">제목 아래 칸은 앱이 짐작한 <b>열 종류</b>예요. 틀렸으면 눌러서 바꾸세요. (날짜 / 숫자 / 글자)</p>
+<div id="ptable"></div>
+</div>
+</section>
+
+<!-- ===== [구역 2] 자동으로 고치기 ===== -->
+<section class="sub">
+<h2>자동으로 고치기</h2><p class="why">흔한 지저분함을 앱이 찾아서 고쳐요. 이 파일에서 찾은 것만 보여 드려요. 스위치를 끄고 켜 보세요. 노란 칸에 마우스를 올리면 원래 모양이 보여요.</p>
+<div id="rules"></div>
+<div id="diffbox"></div>
+<div id="ctable"></div>
+</section>
+
+<!-- ===== [구역 3] 직접 고치기 ===== -->
+<section class="sub">
+<h2>내 손으로 고치기</h2><p class="why">자동으로 못 잡은 것은 직접 고쳐요. 고친 건 모두 기록되고, 언제든 되돌릴 수 있어요.</p>
+<div class="row"><button class="btn2" id="undo">↶ 되돌리기</button><button class="lnk" id="undoall">모두 되돌리기</button><span class="cap" id="opsinfo"></span></div>
+<h3>① 칸을 눌러 바로 고치기 <span class="cap">(고친 뒤 다른 곳을 누르면 저장돼요 · ✕는 줄 지우기)</span></h3>
+<div id="etable"></div>
+<h3>② 같은 뜻인데 다르게 쓴 값 하나로 합치기</h3>
+<div id="vbox"></div>
+<h3>③ 글자를 찾아서 바꾸기</h3>
+<div id="rbox"></div>
+</section>
+
+<!-- ===== [구역 4] AI로 고치기 ===== -->
+<section class="sub">
+<h2>AI와 함께 고치기</h2><p class="why">① 고치고 싶은 점을 적으면 → ② 앱이 AI에게 보낼 질문을 만들어 줘요 → ③ AI가 준 "바꾸기 목록"을 붙여넣으면 → ④ 미리 보고 적용해요.<br>AI는 표를 다시 쓰지 않고 <b>바꿀 목록만</b> 답해요. 그래서 숫자가 몰래 바뀔 걱정이 없어요.</p>
+<label class="fld"><span>고치고 싶은 점 (말로 적으세요. 비워 두면 AI가 이상한 값을 알아서 찾아요)</span><textarea id="aigoal" style="min-height:90px" placeholder="예: 거래처 이름 뒤의 (주)를 빼고 싶어요 / 금액에 '약 5만' 같은 글자가 섞여 있어요"></textarea></label>
+<h3>이름 가려서 보내기</h3>
+<p class="cap">AI에게 값 목록이 같이 나가요. 거래처·사람 이름 열은 A, B로 바꿔서 보내고, 답이 오면 앱이 원래대로 되돌려요.</p>
+<div class="seg" id="aimask"></div>
+<h3>AI에게 보낼 질문</h3>
+<div class="promptbox"><textarea id="aiprompt" readonly aria-label="AI에게 보낼 질문"></textarea></div>
+<div class="row"><button class="btn" id="aicp">질문 복사하기</button><span class="flash" id="aifl"></span></div>
+<div class="ai"><a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT 열기<small>붙여넣고 엔터</small></a><a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini 열기<small>붙여넣고 엔터</small></a></div>
+<h3>AI가 준 바꾸기 목록 붙여넣기</h3>
+<textarea class="big" id="aians" style="min-height:140px" placeholder="열 이름 | 원래 값 | 바꿀 값  ← 이런 줄들을 그대로 붙여넣으세요"></textarea>
+<div id="aiprev"></div>
+<div class="row"><button class="btn" id="aiapply" disabled>이대로 적용하기</button><button class="btn2" id="aiundo">↶ 되돌리기</button><span class="flash" id="aimsg"></span></div>
+</section>
+
+<!-- ===== [구역 5] 합계 내기 ===== -->
+<section class="sub">
+<h2>합계 내기</h2><p class="why">골라서 맞추면 자동으로 계산돼요. 엑셀 함수는 필요 없어요.</p>
+<div id="actl"></div>
+<div id="aout"></div>
+<h3>그림으로 보기</h3>
+<div class="seg" id="kind"><label><input type="radio" name="k" value="bar" checked><span>세로 막대</span></label><label><input type="radio" name="k" value="hbar"><span>가로 막대</span></label><label><input type="radio" name="k" value="line"><span>꺾은선</span></label></div>
+<div id="achart"></div>
+</section>
+
+<!-- ===== [구역 6] 저장 ===== -->
+<section class="sub">
+<h2>저장하고 다음 앱으로</h2><p class="why">정리된 표를 파일로 받아 두면, 다음 앱(분석·보고서)에서 그대로 올릴 수 있어요.</p>
+<div class="row"><button class="btn" id="dl1">정리된 표 받기 (.csv)</button><button class="btn2" id="dl2">합계표 받기 (.csv)</button><button class="btn2" id="cp2">합계표 복사 (엑셀에 붙이기)</button><span class="flash" id="fl"></span></div>
+<div class="callout ok"><b>다음 달엔?</b> 새 엑셀 파일만 올리면 같은 규칙으로 바로 정리돼요. (직접·AI로 고친 건 파일마다 새로 해요)</div>
+<p>받은 .csv 파일은 엑셀에서 더블클릭하면 열려요. 다음 앱: <b>② 분석·시각화 앱</b>, <b>③ 보고서 앱</b>에서 이 파일을 올리세요.</p>
+</section>
+<div id="nav"></div>
+</div>
+<div id="tip"></div><script>/* 에스앤씨 샘플 데이터 (에스앤씨_샘플데이터_참가자용.xlsx 에서 그대로 복사한 모양) */
+window.SNC_RAW = {
+ "sales": "일자\t거래처\t구분\t품목\t수량\t금액(원)\n46206\tNova Tech\t수출\t케이블세트\t13\t117000\n46207\tSakura Parts \t수출\t제어보드\t77\t2695000\n2026.07.08\tNova Tech\t수출\t케이블세트\t116\t1044000\n46213\t Sakura Parts\t수출\t케이블세트\t117\t1053000\n46214\t대성정밀\t내수\t케이블세트\t88\t792,000원\n46214\tNova Tech\t수출\t케이블세트\t51\t459000\n2026.07.14\t대성정밀 \t내수\t제어보드\t78\t2730000\n46218\t미래모터스\t내수\t센서모듈\t83\t1494000\n46214\tNova Tech\t수출\t케이블세트\t51\t459000\n46224\tSakura Parts\t수출\t제어보드\t78\t2730000\n46225\t한빛전자\t내수\t제어보드\t98\t3430000\n2026.07.23\t 미래모터스\t내수\t케이블세트\t79\t711,000원\n46228\t미래모터스 \t내수\t센서모듈\t67\t1206000\n46236\t한빛전자\t내수\t제어보드\t51\t1785000\n46236\tSakura Parts\t수출\t센서모듈\t68\t1224000\n2026.08.04\tNova Tech\t수출\t제어보드\t32\t1120000\n46242\t한빛전자\t내수\t케이블세트\t12\t108000\n46236\tSakura Parts\t수출\t센서모듈\t68\t1224000\n46244\tSakura Parts \t수출\t센서모듈\t18\t324,000원\n46244\t 대성정밀\t내수\t센서모듈\t94\t1692000\n2026.08.11\tNova Tech\t수출\t전원장치\t82\t4264000\n46248\t한빛전자\t내수\t제어보드\t102\t3570000\n46250\t한빛전자\t내수\t센서모듈\t62\t1116000\n46253\tNova Tech \t수출\t제어보드\t33\t1155000\n2026.08.23\t미래모터스\t내수\t케이블세트\t41\t369,000원\n46260\tNova Tech\t수출\t제어보드\t112\t3920000\n46267\t Sakura Parts\t수출\t센서모듈\t42\t756000\n46268\t한빛전자\t내수\t케이블세트\t26\t234000\n46260\tNova Tech\t수출\t제어보드\t112\t3920000\n2026.09.03\t미래모터스 \t내수\t케이블세트\t94\t846000\n46278\tSakura Parts\t수출\t전원장치\t118\t6136000\n46283\tSakura Parts\t수출\t전원장치\t48\t2,496,000원\n46284\t한빛전자\t내수\t센서모듈\t9\t162000\n2026.09.19\tSakura Parts\t수출\t센서모듈\t52\t936000\n46287\t Sakura Parts \t수출\t케이블세트\t104\t936000\n46288\tNova Tech\t수출\t전원장치\t7\t364000\n46290\t대성정밀\t내수\t제어보드\t78\t2730000\n2026.09.25\t미래모터스\t내수\t센서모듈\t99\t1,782,000원\n46292\tSakura Parts\t수출\t제어보드\t33\t1155000",
+ "purchase": "일자\t공급처\t자재\t수량\t단가\t금액(원)\n46204\t우리케미칼 \t포장박스\t200\t600\t120000\n46208\t동양포장\t포장박스\t773\t600\t463800\n46211\t우리케미칼\t알루미늄판\t546\t4500\t2457000\n46214\t대한금속\t알루미늄판\t50\t4500\t225000\n46215\t세진전자 \tPCB기판\t757\t2800\t2119600\n46215\t우리케미칼\t포장박스\t840\t600\t\n46216\t대한금속\t절연테이프\t699\t1500\t1048500\n46216\t우리케미칼\tPCB기판\t580\t2800\t1624000\n46219\t동양포장 \t포장박스\t137\t600\t82200\n46223\t동양포장\tPCB기판\t699\t2800\t1957200\n46239\t대한금속\t포장박스\t808\t600\t484800\n46242\t세진전자\tPCB기판\t677\t2800\t1895600\n46243\t세진전자 \t포장박스\t535\t600\t321000\n46247\t대한금속\tPCB기판\t118\t2800\t330400\n46248\t세진전자\t절연테이프\t286\t1500\t\n46250\t세진전자\t알루미늄판\t78\t4500\t351000\n46253\t우리케미칼 \t알루미늄판\t422\t4500\t1899000\n46257\t대한금속\t포장박스\t708\t600\t424800\n46261\t우리케미칼\t포장박스\t338\t600\t202800\n46262\t대한금속\t절연테이프\t848\t1500\t1272000\n46266\t우리케미칼 \t절연테이프\t597\t1500\t895500\n46269\t대한금속\t절연테이프\t527\t1500\t790500\n46270\t대한금속\tPCB기판\t204\t2800\t571200\n46272\t동양포장\tPCB기판\t162\t2800\t\n46274\t동양포장 \tPCB기판\t578\t2800\t1618400\n46285\t대한금속\t알루미늄판\t262\t4500\t1179000\n46291\t우리케미칼\tPCB기판\t887\t2800\t2483600\n46291\t세진전자\t절연테이프\t315\t1500\t472500\n46293\t동양포장 \t절연테이프\t458\t1500\t687000\n46293\t대한금속\t포장박스\t580\t600\t348000",
+ "defect": "일자\t라인\t제품\t생산수량\t불량수량\n46204\tA라인\t전원장치\t676\t33\n46204\tC 라인\t전원장치\t305\t10\n46207\tC라인\t제어보드\t533\t22\n46207\tc라인\t센서모듈\t775\t5\n46208\tC라인\t전원장치\t219\t11\n46210\tC라인\t전원장치\t552\t16\n46214\tB 라인\t전원장치\t629\t32\n46217\tC라인\t센서모듈\t288\t14\n46223\tC라인\t제어보드\t690\t37\n46229\tB라인\t전원장치\t453\t19\n46236\tC라인\t센서모듈\t669\t27\n46237\tb 라인\t센서모듈\t717\t27\n46239\tC라인\t전원장치\t685\t28\n46239\tB라인\t제어보드\t416\t2\n46243\tC라인\t제어보드\t658\t8\n46246\tC라인\t제어보드\t322\t17\n46251\tC 라인\t센서모듈\t308\t16\n46258\tB라인\t센서모듈\t282\t4\n46258\tB라인\t센서모듈\t611\t28\n46259\ta라인\t전원장치\t204\t9\n46267\tA라인\t제어보드\t483\t3\n46268\tC 라인\t제어보드\t374\t22\n46269\tB라인\t센서모듈\t523\t4\n46270\tA라인\t제어보드\t684\t26\n46272\tB라인\t전원장치\t446\t20\n46272\tC라인\t센서모듈\t663\t21\n46273\tB 라인\t제어보드\t545\t8\n46277\ta라인\t전원장치\t761\t9\n46291\tC라인\t제어보드\t689\t37\n46292\tC라인\t센서모듈\t713\t8"
+};
+</script><script>/* 월 실적 도우미 공통 부품: 파일 읽기, 정리, 집계, 그래프, 가리기 */
+const U = (function(){
+  const $ = (q, r=document) => r.querySelector(q), $$ = (q, r=document) => [...r.querySelectorAll(q)];
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const fmt = n => (n==null||isNaN(n)) ? '' : (Number.isInteger(n) ? n : Math.round(n*10)/10).toLocaleString('ko-KR');
+
+  /* ---------- 글자 표(csv/tsv) 읽기 ---------- */
+  function parseDelim(text){
+    text = text.replace(/^﻿/,'');
+    const first = text.split(/\r?\n/,1)[0];
+    const d = first.includes('\t') ? '\t' : (first.split(',').length>1 ? ',' : '\t');
+    const rows=[]; let row=[], cur='', q=false;
+    for (let i=0;i<text.length;i++){
+      const c=text[i];
+      if (q){ if(c==='"'){ if(text[i+1]==='"'){cur+='"';i++;} else q=false; } else cur+=c; }
+      else if (c==='"' && cur==='') q=true;
+      else if (c===d){ row.push(cur); cur=''; }
+      else if (c==='\n'){ row.push(cur); rows.push(row); row=[]; cur=''; }
+      else if (c!=='\r') cur+=c;
+    }
+    if (cur!=='' || row.length){ row.push(cur); rows.push(row); }
+    return rows;
+  }
+  function toTable(rows){
+    rows = rows.filter(r=>r.some(c=>String(c).trim()!==''));
+    if (!rows.length) return null;
+    let n = rows[0].length; while(n>0 && String(rows[0][n-1]).trim()==='') n--;
+    if (n===0) return null;
+    const header = rows[0].slice(0,n).map((h,i)=>String(h).trim()||('열'+(i+1)));
+    const body = rows.slice(1).map(r=>{ const o=[]; for(let i=0;i<n;i++) o.push(r[i]==null?'':String(r[i])); return o; });
+    return body.length ? {header, rows: body} : null;
+  }
+
+  /* ---------- 엑셀(.xlsx) 읽기: 외부 부품 없이 직접 풀어서 읽음 ---------- */
+  async function inflate(bytes){
+    const ds = new DecompressionStream('deflate-raw');
+    const w = ds.writable.getWriter(); w.write(bytes); w.close();
+    return new Uint8Array(await new Response(ds.readable).arrayBuffer());
+  }
+  async function unzip(buf){
+    const v = new DataView(buf), u8 = new Uint8Array(buf);
+    let e = -1; for (let i=u8.length-22;i>=Math.max(0,u8.length-70000);i--) if (v.getUint32(i,true)===0x06054b50){ e=i; break; }
+    if (e<0) throw new Error('엑셀 파일(.xlsx)이 아니에요');
+    const n = v.getUint16(e+10,true); let p = v.getUint32(e+16,true); const files = {};
+    const dec = new TextDecoder();
+    for (let i=0;i<n;i++){
+      const method=v.getUint16(p+10,true), csize=v.getUint32(p+20,true), nl=v.getUint16(p+28,true), el=v.getUint16(p+30,true), cl=v.getUint16(p+32,true), off=v.getUint32(p+42,true);
+      const name = dec.decode(u8.subarray(p+46,p+46+nl)); p += 46+nl+el+cl;
+      const ln=v.getUint16(off+26,true), le=v.getUint16(off+28,true), start=off+30+ln+le;
+      const raw = u8.subarray(start,start+csize);
+      files[name] = {method, raw};
+    }
+    const get = async name => { const f=files[name]; if(!f) return null; const b = f.method===0 ? f.raw : await inflate(f.raw); return dec.decode(b); };
+    return {get, has:name=>!!files[name]};
+  }
+  const unesc = s => s.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&#(\d+);/g,(m,d)=>String.fromCodePoint(+d)).replace(/&#x([0-9a-f]+);/gi,(m,h)=>String.fromCodePoint(parseInt(h,16))).replace(/&amp;/g,'&');
+  const colIdx = ref => { let n=0; for (const ch of ref.replace(/[0-9]/g,'')) n = n*26 + ch.charCodeAt(0)-64; return n-1; };
+  function serialToISO(sv){ return new Date(Date.UTC(1899,11,30)+Math.floor(sv)*864e5).toISOString().slice(0,10); }
+  async function readXlsx(buf){
+    const z = await unzip(buf);
+    const wb = await z.get('xl/workbook.xml'); if(!wb) throw new Error('엑셀 파일(.xlsx)이 아니에요');
+    const rels = await z.get('xl/_rels/workbook.xml.rels') || '';
+    const relMap = {}; for (const m of rels.matchAll(/<Relationship\b[^>]*>/g)){ const id=(m[0].match(/\bId="([^"]*)"/)||[])[1], t=(m[0].match(/\bTarget="([^"]*)"/)||[])[1]; if(id) relMap[id]=t; }
+    const sst = await z.get('xl/sharedStrings.xml'); const shared=[];
+    if (sst) for (const m of sst.matchAll(/<si\b[^>]*>([\s\S]*?)<\/si>/g)){ const inner=m[1].replace(/<rPh\b[\s\S]*?<\/rPh>/g,''); shared.push(unesc([...inner.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)].map(x=>x[1]).join(''))); }
+    /* 날짜 모양으로 저장된 칸 찾기 */
+    const dateXf = new Set(); const st = await z.get('xl/styles.xml');
+    if (st){
+      const custom = {}; for (const m of st.matchAll(/<numFmt\b[^>]*>/g)){ const id=(m[0].match(/numFmtId="(\d+)"/)||[])[1], code=(m[0].match(/formatCode="([^"]*)"/)||[])[1]||''; custom[id]=code; }
+      const cx = (st.match(/<cellXfs\b[^>]*>([\s\S]*?)<\/cellXfs>/)||[])[1]||'';
+      [...cx.matchAll(/<xf\b[^>]*>/g)].forEach((m,i)=>{ const id=+((m[0].match(/numFmtId="(\d+)"/)||[])[1]||0);
+        const isD = (id>=14&&id<=22)||(id>=45&&id<=47)||(custom[id] && /[ymd]/i.test(custom[id].replace(/"[^"]*"|\[[^\]]*\]/g,'')) && !/[hs]{1,2}:?$/.test('') );
+        if (isD) dateXf.add(i); });
+    }
+    const sheets=[];
+    for (const m of wb.matchAll(/<sheet\b[^>]*>/g)){
+      const name = unesc((m[0].match(/\bname="([^"]*)"/)||[])[1]||'시트'); const rid=(m[0].match(/r:id="([^"]*)"/)||[])[1];
+      let t = relMap[rid]||''; t = t.startsWith('/') ? t.slice(1) : 'xl/'+t;
+      const xml = await z.get(t); if(!xml) continue;
+      const rows=[];
+      for (const rm of xml.matchAll(/<row\b[^>]*?(?:\/>|>([\s\S]*?)<\/row>)/g)){
+        const r=[]; const body=rm[1]||'';
+        for (const cm of body.matchAll(/<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g)){
+          const at=cm[1], inner=cm[2]||''; const ref=(at.match(/\br="([A-Z]+)\d+"/)||[])[1]; if(!ref) continue;
+          const ty=(at.match(/\bt="([^"]*)"/)||[])[1]||'n', s=+((at.match(/\bs="(\d+)"/)||[])[1]||0);
+          let val='';
+          if (ty==='inlineStr') val = unesc([...inner.matchAll(/<t\b[^>]*>([\s\S]*?)<\/t>/g)].map(x=>x[1]).join(''));
+          else { const vv=(inner.match(/<v>([\s\S]*?)<\/v>/)||[])[1]; if(vv!=null){ val = ty==='s' ? (shared[+vv]||'') : unesc(vv); if(ty==='n' && dateXf.has(s) && !isNaN(+val)) val = serialToISO(+val); if(ty==='b') val = vv==='1'?'TRUE':'FALSE'; } }
+          r[colIdx(ref)] = val;
+        }
+        rows.push(Array.from(r,x=>x==null?'':x));
+      }
+      sheets.push({name, rows});
+    }
+    return sheets;
+  }
+  async function readFile(file){
+    const buf = await file.arrayBuffer();
+    if (/\.xlsx$/i.test(file.name) || (new Uint8Array(buf,0,2)[0]===0x50 && new Uint8Array(buf,0,2)[1]===0x4b)) return readXlsx(buf);
+    if (/\.xls$/i.test(file.name)) throw new Error('옛 형식(.xls)은 못 읽어요. 엑셀에서 "다른 이름으로 저장 → .xlsx"로 바꿔 주세요');
+    let text; try { text = new TextDecoder('utf-8',{fatal:true}).decode(buf); } catch(e){ text = new TextDecoder('euc-kr').decode(buf); }
+    return [{name:file.name, rows: parseDelim(text)}];
+  }
+
+  /* ---------- 열 종류 알아맞히기 ---------- */
+  const DATE_HEAD = /일자|날짜|일시|date|납기|출고일|입고일/i;
+  function parseDate(v, allowSerial){
+    let s = String(v).trim(); if(!s) return null;
+    s = s.replace(/\s+\d{1,2}:\d{2}(:\d{2})?.*$/,'');
+    let m = s.match(/^(\d{4})\s*[.\-\/년]\s*(\d{1,2})\s*[.\-\/월]\s*(\d{1,2})\s*일?$/) || s.match(/^(\d{4})(\d{2})(\d{2})$/);
+    if (!m && /^\d{2}[.\-\/]\d{1,2}[.\-\/]\d{1,2}$/.test(s)){ const p=s.split(/[.\-\/]/); m=[0,'20'+p[0],p[1],p[2]]; }
+    if (m){ const y=+m[1], mo=+m[2], d=+m[3]; if(mo>=1&&mo<=12&&d>=1&&d<=31&&y>=1990&&y<=2100) return `${y}-${String(mo).padStart(2,'0')}-${String(d).padStart(2,'0')}`; return null; }
+    if (allowSerial && /^\d{5}(\.\d+)?$/.test(s) && +s>=30000 && +s<=70000) return serialToISO(+s);
+    return null;
+  }
+  const UNIT = /(원|개|ea|pcs|kg|㎏|%|건|대|톤|t)$/i;
+  function parseNum(v){
+    let s = String(v).trim().replace(/^[₩￦$]/,'').replace(/[,\s]/g,''); s = s.replace(UNIT,'');
+    if (!/^[-+]?\d+(\.\d+)?$/.test(s)) return NaN; return +s;
+  }
+  function detectTypes(t){
+    return t.header.map((h,c)=>{
+      const vals = t.rows.map(r=>r[c]).filter(v=>String(v).trim()!==''); if(!vals.length) return 'text';
+      const hd = DATE_HEAD.test(h);
+      const dRatio = vals.filter(v=>parseDate(v,hd)).length/vals.length;
+      if (dRatio>=0.8) return 'date';
+      const nRatio = vals.filter(v=>!isNaN(parseNum(v))).length/vals.length;
+      if (nRatio>=0.8) return 'num';
+      return 'text';
+    });
+  }
+  const TYPE_LABEL = {date:'날짜', num:'숫자', text:'글자'};
+
+  /* ---------- 정리 ---------- */
+  const RULES = {
+    trim:'앞뒤·글자 속 보이지 않는 빈칸 지우기',
+    date:'날짜를 2026-07-08 한 가지 모양으로',
+    num:'숫자에 붙은 "원"·쉼표 없애기',
+    same:'같은 이름인데 다르게 쓴 것 하나로 (A라인 / A 라인)',
+    dup:'똑같은 줄은 한 번만 세기'
+  };
+  const ALL_ON = {trim:true,date:true,num:true,same:true,dup:true};
+  function clean(t, types, opts){
+    opts = Object.assign({}, ALL_ON, opts||{});
+    const counts = {trim:0,date:0,num:0,same:0,dup:0};
+    let rows = t.rows.map(r=>({dup:false, cells: r.map(x=>({v:x, raw:x, kinds:[]}))}));
+    const mark = (c,newV,kind)=>{ if(newV!==c.v){ c.v=newV; if(!c.kinds.includes(kind)){ c.kinds.push(kind); counts[kind]++; } } };
+    rows.forEach(r=>r.cells.forEach((c,i)=>{
+      if (opts.trim) mark(c, c.v.replace(/[ ​　]/g,' ').trim(), 'trim');
+      if (opts.date && types[i]==='date'){ const d=parseDate(c.v,true); if(d) mark(c,d,'date'); }
+      if (opts.num && types[i]==='num'){ const n=parseNum(c.v); if(!isNaN(n)) mark(c,String(n),'num'); }
+    }));
+    if (opts.same) t.header.forEach((h,i)=>{
+      if (types[i]!=='text') return;
+      const g = new Map(); rows.forEach(r=>{ const v=r.cells[i].v; if(!v) return; const k=v.normalize('NFKC').replace(/\s+/g,'').toLowerCase(); if(!g.has(k)) g.set(k,new Map()); const m=g.get(k); m.set(v,(m.get(v)||0)+1); });
+      if (g.size > rows.length*0.5) return;
+      const canon = new Map(); g.forEach((m,k)=>{ if(m.size>1){ let best=null,bc=-1; m.forEach((c,v)=>{ if(c>bc||(c===bc&&v.length<best.length)){best=v;bc=c;} }); canon.set(k,best); } });
+      rows.forEach(r=>{ const c=r.cells[i]; if(!c.v) return; const k=c.v.normalize('NFKC').replace(/\s+/g,'').toLowerCase(); if(canon.has(k)) mark(c,canon.get(k),'same'); });
+    });
+    if (opts.dup){ const seen=new Set(); rows.forEach(r=>{ const k=r.cells.map(c=>c.v).join('\u0001'); if(seen.has(k)){ r.dup=true; counts.dup++; } else seen.add(k); }); }
+    return {header:t.header, types, rows, counts, kept: rows.filter(r=>!r.dup).length, total: rows.length};
+  }
+  function cleanTable(cl){ return {header:cl.header, rows: cl.rows.filter(r=>!r.dup).map(r=>r.cells.map(c=>c.v))}; }
+  const colSum = (cl,i)=> cl.rows.reduce((a,r)=> r.dup?a:a+(parseNum(r.cells[i].v)||0),0);
+
+  /* ---------- 집계 ---------- */
+  function aggregate(t, types, cfg){
+    const {key, month, val, method, split} = cfg;
+    const keyOf = r => { let v=String(r[key]).trim(); if(types[key]==='date'){ const d=parseDate(v,true); if(d) v = month ? d.slice(0,7) : d; } return v||'(빈칸)'; };
+    const keys=[], ks=new Set(), splits=[], ss=new Set(), cell={}, cnt={};
+    t.rows.forEach(r=>{
+      const k=keyOf(r), s = split>=0 ? (String(r[split]).trim()||'(빈칸)') : '전체';
+      if(!ks.has(k)){ks.add(k);keys.push(k);} if(!ss.has(s)){ss.add(s);splits.push(s);}
+      const n = method==='count' ? 1 : parseNum(r[val]); if (isNaN(n)) return;
+      const id=k+'\u0001'+s; cell[id]=(cell[id]||0)+n; cnt[id]=(cnt[id]||0)+1;
+    });
+    const isDateKey = types[key]==='date';
+    const get=(k,s)=>{ const id=k+'\u0001'+s; if(!(id in cell)) return 0; return method==='avg' ? cell[id]/cnt[id] : cell[id]; };
+    const rowTot = k => { if(method==='avg'){ let a=0,c=0; splits.forEach(s=>{const id=k+'\u0001'+s; if(id in cell){a+=cell[id];c+=cnt[id];}}); return c?a/c:0; } return splits.reduce((a,s)=>a+get(k,s),0); };
+    let ordered = keys.slice();
+    if (isDateKey) ordered.sort(); else ordered.sort((a,b)=>rowTot(b)-rowTot(a));
+    let colTot = s => { if(method==='avg'){ let a=0,c=0; keys.forEach(k=>{const id=k+'\u0001'+s; if(id in cell){a+=cell[id];c+=cnt[id];}}); return c?a/c:0; } return keys.reduce((a,k)=>a+get(k,s),0); };
+    let grand; if(method==='avg'){ let a=0,c=0; Object.keys(cell).forEach(id=>{a+=cell[id];c+=cnt[id];}); grand=c?a/c:0; } else grand = Object.keys(cell).reduce((a,id)=>a+cell[id],0);
+    return {keys:ordered, splits, get, rowTot, colTot, grand, method, isDateKey};
+  }
+  const METHOD = {sum:'합계', avg:'평균', count:'개수'};
+  function aggTable(a, keyName, valName){
+    const multi = a.splits.length>1;
+    let h = `<table><thead><tr><th>${esc(keyName)}</th>${multi? a.splits.map(s=>`<th class="r">${esc(s)}</th>`).join('') : ''}<th class="r">${esc(METHOD[a.method])}${a.method==='count'?'':' · '+esc(valName)}</th></tr></thead><tbody>`;
+    a.keys.forEach(k=>{ h += `<tr><td>${esc(k)}</td>${multi? a.splits.map(s=>`<td class="r">${fmt(a.get(k,s))}</td>`).join(''):''}<td class="r">${fmt(a.rowTot(k))}</td></tr>`; });
+    h += `</tbody><tfoot><tr><td>${a.method==='avg'?'전체 평균':'전체'}</td>${multi? a.splits.map(s=>`<td class="r">${fmt(a.colTot(s))}</td>`).join(''):''}<td class="r">${fmt(a.grand)}</td></tr></tfoot></table>`;
+    return h;
+  }
+  function aggRows(a, keyName){
+    const multi=a.splits.length>1; const head=[keyName].concat(multi?a.splits:[]).concat(['합계/평균']);
+    return [head].concat(a.keys.map(k=>[k].concat(multi?a.splits.map(s=>a.get(k,s)):[]).concat([a.rowTot(k)]))).concat([['전체'].concat(multi?a.splits.map(s=>a.colTot(s)):[]).concat([a.grand])]);
+  }
+  /* 집계 설정 화면(공통) */
+  function pickDefaults(t, types){
+    const dateC = types.indexOf('date'); const nums = types.map((x,i)=>x==='num'?i:-1).filter(i=>i>=0);
+    const prefer = ['금액|매출|합계','수량|불량'].map(re=>nums.find(i=>new RegExp(re).test(t.header[i]))).find(x=>x!=null); const textC = types.findIndex((x,i)=>x==='text' && new Set(t.rows.map(r=>r[i])).size<=40);
+    return {key: dateC>=0?dateC:Math.max(textC,0), month: dateC>=0, val: prefer!=null?prefer:(nums[0]??0), method: nums.length?'sum':'count', split: -1};
+  }
+  function aggControls(el, t, types, cfg, onChange){
+    const sel = (id,label,opts,cur)=>`<label class="fld"><span>${label}</span><select id="${id}">${opts}</select></label>`;
+    const colOpts = (filter,cur,none)=> (none?`<option value="-1" ${cur===-1?'selected':''}>${none}</option>`:'') + t.header.map((h,i)=> filter(i)?`<option value="${i}" ${cur===i?'selected':''}>${esc(h)}</option>`:'').join('');
+    const nums = i=>types[i]==='num';
+    el.innerHTML = `<div class="flds">
+      ${sel('a-key','무엇별로 묶을까요?',colOpts(()=>true,cfg.key),cfg.key)}
+      ${sel('a-method','어떻게 셀까요?',['sum','avg','count'].map(m=>`<option value="${m}" ${cfg.method===m?'selected':''}>${METHOD[m]}${m==='count'?' (줄 수)':''}</option>`).join(''))}
+      ${sel('a-val','어느 숫자를?',colOpts(nums,cfg.val), cfg.val)}
+      ${sel('a-split','더 나눠 볼까요?',colOpts(i=>i!==cfg.key&&types[i]==='text'&&new Set(t.rows.map(r=>r[i])).size<=12,cfg.split,'(나누지 않기)'))}
+    </div>
+    <label class="rule" id="a-monthrow" ${types[cfg.key]==='date'?'':'hidden'}><input type="checkbox" id="a-month" ${cfg.month?'checked':''}><span class="sw"></span><span class="t">날짜는 <b>월별</b>로 묶기</span></label>`;
+    const rd = ()=>{ cfg.key=+$('#a-key',el).value; cfg.method=$('#a-method',el).value; cfg.val=+$('#a-val',el).value; cfg.split=+$('#a-split',el).value; const mc=$('#a-month',el); cfg.month = mc?mc.checked:false; };
+    $$('select,input',el).forEach(x=>x.onchange=()=>{ const kc=+$('#a-key',el).value; const keyChanged = kc!==cfg.key; rd(); if(keyChanged){ if(types[cfg.key]==='date') cfg.month=true; if(cfg.split===cfg.key) cfg.split=-1; aggControls(el,t,types,cfg,onChange);} $('#a-val',el) && ($('#a-val',el).disabled = cfg.method==='count'); onChange(); });
+    if ($('#a-val',el)) $('#a-val',el).disabled = cfg.method==='count';
+  }
+
+  /* ---------- 그래프 ---------- */
+  const COLORS = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)','var(--c6)'];
+  function unitOf(max){ return max>=1e8?[1e8,'억']:max>=1e6?[1e6,'백만']:max>=1e4?[1e4,'만']:[1,'']; }
+  function niceMax(m){ if(m<=0) return 1; const p=Math.pow(10,Math.floor(Math.log10(m))); const f=m/p; return (f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10)*p; }
+  function chart(a, kind, o){
+    o = Object.assign({w:760,h:320},o||{});
+    let keys = a.keys; let more='';
+    if (keys.length>16 && !a.isDateKey){ keys = keys.slice(0,15); more=`상위 15개만 그렸어요 (전체 ${a.keys.length}개)`; }
+    const multi = a.splits.length>1, stacked = multi && a.method!=='avg';
+    const tot = k=>a.rowTot(k);
+    let max = 0;
+    if (kind==='hbar'||!multi) keys.forEach(k=>max=Math.max(max,tot(k)));
+    else keys.forEach(k=> max=Math.max(max, stacked?tot(k):Math.max(...a.splits.map(s=>a.get(k,s)))));
+    const [div,unit] = unitOf(max), nm = niceMax(max/div)*div;
+    const f = v=>fmt(v/div);
+    let s=''; const legend = multi ? `<div class="key">${a.splits.map((x,i)=>`<span><i style="background:${COLORS[i%6]}"></i>${esc(x)}</span>`).join('')}</div>` : '';
+    if (kind==='hbar'){
+      const L=110,R=90,rh=34,W=o.w-L-R,H=keys.length*rh+10;
+      s=`<svg viewBox="0 0 ${o.w} ${H}" role="img" aria-label="가로 막대 그래프" style="width:100%;height:auto;display:block">`;
+      keys.forEach((k,i)=>{ const y=5+i*rh, bw=nm?tot(k)/nm*W:0;
+        s+=`<text x="${L-10}" y="${y+rh/2+5}" text-anchor="end" font-size="15" fill="var(--text)">${esc(k.length>9?k.slice(0,9)+'…':k)}</text>`;
+        s+=`<rect class="bar" x="${L}" y="${y+6}" width="${Math.max(bw,1)}" height="${rh-14}" fill="${COLORS[0]}"><title>${esc(k)}: ${fmt(tot(k))}</title></rect>`;
+        s+=`<text x="${L+bw+8}" y="${y+rh/2+5}" font-size="14" fill="var(--sub)">${fmt(tot(k))}</text>`; });
+      return legend+s+'</svg>'+(more?`<p class="cap">${more}</p>`:'');
+    }
+    const L=56,R=16,T=34,B=44,W=o.w-L-R,Hh=o.h-T-B; const n=keys.length;
+    s=`<svg viewBox="0 0 ${o.w} ${o.h}" role="img" aria-label="${kind==='line'?'선':'막대'} 그래프" style="width:100%;height:auto;display:block">`;
+    s+=`<text x="0" y="14" font-size="14" fill="var(--sub)">단위: ${unit||'그대로'}</text>`;
+    for(let i=0;i<=4;i++){ const v=nm/4*i, y=T+Hh-(v/nm)*Hh; s+=`<line x1="${L}" x2="${L+W}" y1="${y}" y2="${y}" stroke="var(--line)"/><text x="${L-8}" y="${y+5}" text-anchor="end" font-size="14" fill="var(--sub)">${f(v)}</text>`; }
+    const step = W/n; const lab=k=> a.isDateKey&&/^\d{4}-\d{2}$/.test(k) ? (+k.slice(5))+'월' : (k.length>7?k.slice(0,7)+'…':k);
+    const skip = Math.ceil(n/12);
+    keys.forEach((k,i)=>{ if(i%skip===0) s+=`<text x="${L+step*i+step/2}" y="${T+Hh+24}" text-anchor="middle" font-size="15" fill="var(--text)">${esc(lab(k))}</text>`; });
+    if (kind==='line'){
+      const series = multi ? a.splits : ['전체'];
+      series.forEach((sp,si)=>{ const pts=keys.map((k,i)=>{ const v=multi?a.get(k,sp):tot(k); return [L+step*i+step/2, T+Hh-(nm?v/nm:0)*Hh, v, k]; });
+        s+=`<polyline fill="none" stroke="${COLORS[si%6]}" stroke-width="3" points="${pts.map(p=>p[0]+','+p[1]).join(' ')}"/>`;
+        pts.forEach(p=>s+=`<circle class="bar" cx="${p[0]}" cy="${p[1]}" r="5" fill="${COLORS[si%6]}"><title>${esc(p[3])}${multi?' · '+esc(sp):''}: ${fmt(p[2])}</title></circle>`); });
+    } else {
+      keys.forEach((k,i)=>{ const x0=L+step*i+step*0.18, bw=step*0.64;
+        if(!multi){ const v=tot(k), h=nm?v/nm*Hh:0; s+=`<rect class="bar" x="${x0}" y="${T+Hh-h}" width="${bw}" height="${Math.max(h,1)}" fill="${COLORS[0]}"><title>${esc(k)}: ${fmt(v)}</title></rect>`; }
+        else if(stacked){ let y=T+Hh; a.splits.forEach((sp,si)=>{ const v=a.get(k,sp), h=nm?v/nm*Hh:0; y-=h; s+=`<rect class="bar" x="${x0}" y="${y}" width="${bw}" height="${h}" fill="${COLORS[si%6]}"><title>${esc(k)} · ${esc(sp)}: ${fmt(v)}</title></rect>`; }); }
+        else { const w=bw/a.splits.length; a.splits.forEach((sp,si)=>{ const v=a.get(k,sp), h=nm?v/nm*Hh:0; s+=`<rect class="bar" x="${x0+w*si}" y="${T+Hh-h}" width="${w-2}" height="${Math.max(h,1)}" fill="${COLORS[si%6]}"><title>${esc(k)} · ${esc(sp)}: ${fmt(v)}</title></rect>`; }); }
+      });
+    }
+    return legend+s+'</svg>'+(more?`<p class="cap">${more}</p>`:'');
+  }
+
+  /* ---------- 이름 가리기 ---------- */
+  function aliasOf(i){ let s=''; i++; while(i>0){ const r=(i-1)%26; s=String.fromCharCode(65+r)+s; i=Math.floor((i-1)/26); } return s; }
+  function makeAliases(groups){ /* groups: {열이름:[값...]} */
+    const map={}; Object.keys(groups).forEach(col=>{ [...new Set(groups[col])].filter(v=>v && v!=='(빈칸)' && v!=='전체').forEach((v,i)=>{ map[v]=col+aliasOf(i); }); }); return map; }
+  function applyAlias(text, map){ return Object.keys(map).sort((a,b)=>b.length-a.length).reduce((t,k)=>t.split(k).join(map[k]),text); }
+  function restoreAlias(text, map){ const rev={}; Object.keys(map).forEach(k=>rev[map[k]]=k); return Object.keys(rev).sort((a,b)=>b.length-a.length).reduce((t,k)=>t.split(k).join(rev[k]),text); }
+
+  /* ---------- 파일 올리기 화면 ---------- */
+  function attachLoader(o){
+    let sheets=[]; const drop=$(o.drop), file=$(o.file), sel=$(o.sheet), msg=$(o.msg);
+    const say=(t,bad)=>{ msg.textContent=t; msg.className = bad?'warn':'hint'; };
+    const use=i=>{ const t=toTable(sheets[i].rows); if(!t){ say('표를 찾지 못했어요. 첫 줄(제목 줄)까지 있는 표인지 확인해 주세요.',true); return; } say(`"${sheets[i].name}" 시트에서 ${t.rows.length}줄을 읽었어요.`); o.onTable(t, sheets[i].name); };
+    const handle=async f=>{ if(!f) return; say('읽는 중…'); try{ sheets=await readFile(f); sheets=sheets.filter(s=>s.rows.length); if(!sheets.length) throw new Error('내용이 비어 있어요'); sel.innerHTML=sheets.map((s,i)=>`<option value="${i}">${esc(s.name)}</option>`).join(''); sel.closest('.fld').hidden = sheets.length<2; use(0); }catch(e){ say(e.message||'파일을 읽지 못했어요',true); } };
+    file.onchange=()=>handle(file.files[0]);
+    sel.onchange=()=>use(+sel.value);
+    ['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('over');}));
+    ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
+    drop.addEventListener('drop',e=>handle(e.dataTransfer.files[0]));
+    drop.addEventListener('click',e=>{ if(!e.target.closest('button,label,select')) file.click(); });
+    drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); file.click(); } });
+    if(o.paste){ const p=$(o.paste); let tm; p.addEventListener('input',()=>{ clearTimeout(tm); tm=setTimeout(()=>{ const t=toTable(parseDelim(p.value)); if(!t){ say(p.value.trim()?'첫 줄(제목 줄)까지 같이 복사해 주세요.':'', !!p.value.trim()); return; } sheets=[{name:'붙여넣은 표',rows:parseDelim(p.value)}]; sel.closest('.fld').hidden=true; use(0); },150); }); }
+    return {say};
+  }
+  function previewTable(el, t, types, onType){
+    let h=`<div class="tablebox"><table><thead><tr>${t.header.map((x,i)=>`<th class="${types[i]==='num'?'r':''}">${esc(x)}</th>`).join('')}</tr><tr class="typerow">${types.map((ty,i)=>`<th><select data-i="${i}" aria-label="${esc(t.header[i])} 열 종류">${['date','num','text'].map(k=>`<option value="${k}" ${ty===k?'selected':''}>${TYPE_LABEL[k]}</option>`).join('')}</select></th>`).join('')}</tr></thead><tbody>`;
+    t.rows.slice(0,6).forEach(r=>{ h+=`<tr>${r.map((v,i)=>`<td class="${types[i]==='num'?'r':''}">${esc(v)}</td>`).join('')}</tr>`; });
+    el.innerHTML=h+'</tbody></table></div>';
+    $$('select',el).forEach(s=>s.onchange=()=>{ types[+s.dataset.i]=s.value; onType(); });
+  }
+  function cleanedTableHTML(cl){
+    const numC = cl.types.map(x=>x==='num');
+    let h=`<div class="tablebox"><table><thead><tr>${cl.header.map((x,i)=>`<th class="${numC[i]?'r':''}">${esc(x)}</th>`).join('')}</tr></thead><tbody>`;
+    cl.rows.forEach(r=>{ h+=`<tr class="${r.dup?'dup':''}">`+r.cells.map((c,i)=>{ const v=numC[i]&&c.v!==''&&!isNaN(+c.v)?(+c.v).toLocaleString('ko-KR'):c.v; const chg=c.kinds.length&&!r.dup; return `<td class="${numC[i]?'r':''} ${chg?'chg':''}" ${chg?`data-from="${esc(c.raw)}"`:''}>${esc(v)}</td>`; }).join('')+'</tr>'; });
+    return h+'</tbody></table></div>';
+  }
+
+  /* ---------- 자잘한 것 ---------- */
+  function toCSV(rows){ return '﻿'+rows.map(r=>r.map(c=>{ c=String(c==null?'':c); return /[",\n\t]/.test(c)?'"'+c.replace(/"/g,'""')+'"':c; }).join(',')).join('\r\n'); }
+  function download(name, content, type){ const b=new Blob([content],{type:type||'text/csv;charset=utf-8'}); const a=document.createElement('a'); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},500); }
+  function flash(el,m){ el.textContent=m; setTimeout(()=>el.textContent='',2400); }
+  function copy(text, el){
+    const ok=()=>flash(el,'복사했어요 ✓');
+    const fb=()=>{ const t=document.createElement('textarea'); t.value=text; document.body.appendChild(t); t.select(); try{document.execCommand('copy');ok();}catch(e){flash(el,'선택해서 직접 복사해 주세요');} t.remove(); };
+    if(navigator.clipboard&&window.isSecureContext) navigator.clipboard.writeText(text).then(ok,fb); else fb();
+  }
+  function stepper(titles, onShow){
+    const subs=$$('.sub'); let k=0;
+    function show(i){ k=i; subs.forEach((s,j)=>s.classList.toggle('on',j===i));
+      $('#subtabs').innerHTML=titles.map((t,j)=>`<button role="tab" aria-selected="${j===i}" data-i="${j}"><b>${j+1}</b>${esc(t)}</button>`).join('');
+      $('#nav').innerHTML=(i>0?`<button class="lnk" data-i="${i-1}">← 이전</button>`:'<span></span>')+(i<titles.length-1?`<button class="btn" data-i="${i+1}">다음: ${esc(titles[i+1])} →</button>`:'<span></span>');
+      onShow&&onShow(i); window.scrollTo({top:0,behavior:'smooth'}); }
+    document.addEventListener('click',e=>{ const b=e.target.closest('#subtabs [data-i],#nav [data-i]'); if(b) show(+b.dataset.i); });
+    show(0); return {show, get cur(){return k;}};
+  }
+  const tipEl = ()=>$('#tip');
+  function tipInit(){
+    document.addEventListener('mousemove',e=>{ const tip=tipEl(); if(!tip) return; const td=e.target.closest&&e.target.closest('td.chg'); const nm=e.target.closest&&e.target.closest('[data-tip]');
+      if(td) tip.textContent='원래 모양: '+(td.dataset.from===''?'(빈칸)':td.dataset.from); else if(nm) tip.textContent=nm.dataset.tip; else { tip.style.opacity=0; return; }
+      tip.style.left=Math.min(e.clientX+14,innerWidth-320)+'px'; tip.style.top=(e.clientY+18)+'px'; tip.style.opacity=1; });
+  }
+  return {$,$$,esc,fmt,parseDelim,toTable,readFile,readXlsx,parseDate,parseNum,detectTypes,TYPE_LABEL,RULES,ALL_ON,clean,cleanTable,colSum,aggregate,aggTable,aggRows,aggControls,pickDefaults,METHOD,chart,makeAliases,applyAlias,restoreAlias,aliasOf,attachLoader,previewTable,cleanedTableHTML,toCSV,download,flash,copy,stepper,tipInit};
+})();
+
+</script><script>
+(function(){const {$,$$,esc,fmt}=U;
+/* ===== [구역 A] 앱이 기억하는 것 ===== */
+let T=null,types=[],opts=Object.assign({},U.ALL_ON),fl=null,full=null,ops=[],gid=0,cfg=null,kind='bar',fname='표';
+let vcol=0,ventries=[],vtouched=false,aiMask=new Set(),aiMap={},aiItems=[];
+const st=U.stepper(['표 올리기','자동 고치기','내 손으로','AI로 고치기','합계 내기','저장'],i=>{ if(i>0&&!T){ st.show(0); U.flash($('#msg'),'먼저 표를 올려 주세요'); return;} const f={1:renderAuto,2:renderManual,3:renderAI,4:renderAgg}[i]; if(f) f(); });
+U.tipInit();
+const vis=s=>{ s=String(s); return s===''?'(빈칸)':s.replace(/^[  　]+|[  　]+$/g,m=>'␣'.repeat(m.length)).replace(/​/g,'␣'); };
+const nameCol=h=>/거래처|공급처|업체|고객|회사|바이어|담당|이름|성명/.test(h);
+
+/* ===== [구역 B] 표 올리기 ===== */
+function setTable(t,name){ T=t; fname=(name||'표').replace(/\.[^.]+$/,''); types=U.detectTypes(t); cfg=U.pickDefaults(t,types); opts=Object.assign({},U.ALL_ON); ops=[]; gid=0; fl=null; vcol=Math.max(types.indexOf('text'),0); aiMask=new Set(); t.header.forEach((h,i)=>{ if(types[i]==='text'&&nameCol(h)) aiMask.add(i); }); $('#aians').value=''; 
+  $('#preview').hidden=false; U.previewTable($('#ptable'),t,types,()=>{cfg=U.pickDefaults(T,types);}); }
+U.attachLoader({drop:'#drop',file:'#file',sheet:'#sheet',msg:'#msg',paste:'#paste',onTable:setTable});
+$$('#samples button').forEach(b=>b.onclick=()=>{ const t=U.toTable(U.parseDelim(window.SNC_RAW[b.dataset.s])); $('#msg').textContent='연습용 자료를 불러왔어요 ('+t.rows.length+'줄)'; $('#msg').className='hint'; setTable(t,b.textContent); });
+
+/* ===== [구역 C] 고친 결과 만들기 (자동 규칙 → 내가 고친 기록 순서로 적용) ===== */
+function buildFinal(){
+  const cl=U.clean(T,types,opts); full=U.clean(T,types,U.ALL_ON);
+  const rows=cl.rows.map(r=>({dup:r.dup,del:false,cells:r.cells.map(c=>({v:c.v,raw:c.raw,kinds:c.kinds.slice()}))}));
+  const hit=(c,o)=>o.loose?c.v.trim()===o.from:c.v===o.from;
+  ops.forEach(o=>{
+    if(o.t==='cell'){ const c=rows[o.r].cells[o.c]; if(c.v!==o.v){ c.v=o.v; c.kinds.push('edit'); } }
+    else if(o.t==='map'){ rows.forEach(r=>{ const c=r.cells[o.c]; if(hit(c,o)){ c.v=o.to; c.kinds.push('edit'); } }); }
+    else if(o.t==='rep'){ rows.forEach(r=>r.cells.forEach((c,ci)=>{ if((o.c<0||o.c===ci)&&c.v.includes(o.from)){ c.v=c.v.split(o.from).join(o.to); c.kinds.push('edit'); } })); }
+    else if(o.t==='del'){ rows[o.r].dup=true; rows[o.r].del=true; }
+    else if(o.t==='delval'){ rows.forEach(r=>{ if(hit(r.cells[o.c],o)){ r.dup=true; r.del=true; } }); }
+  });
+  fl={header:T.header,types,rows,counts:cl.counts,kept:rows.filter(r=>!r.dup).length,total:rows.length};
+}
+function redetect(cols){ const tmp={header:T.header,rows:fl.rows.filter(r=>!r.dup).map(r=>r.cells.map(c=>c.v))}; const t2=U.detectTypes(tmp); const ch=[]; cols.forEach(c=>{ if(types[c]!==t2[c]){ ch.push(`「${T.header[c]}」 ${U.TYPE_LABEL[types[c]]}→${U.TYPE_LABEL[t2[c]]}`); types[c]=t2[c]; } }); if(ch.length){ cfg=U.pickDefaults(T,types); buildFinal(); } return ch; }
+function push(o){ o.g=o.g||++gid; ops.push(o); }
+function undo(){ if(!ops.length) return; const g=ops[ops.length-1].g; while(ops.length&&ops[ops.length-1].g===g) ops.pop(); }
+function opDesc(o){ const h=o.c>=0?T.header[o.c]:'모든 열'; return o.t==='cell'?`「${h}」 칸 직접 고침`:o.t==='map'?`「${h}」 '${o.from}' → '${o.to}'`:o.t==='rep'?`「${h}」 '${o.from}' → '${o.to}' 바꾸기`:o.t==='del'?'줄 하나 지움':`「${h}」 '${o.from}' 줄 지움`; }
+const entriesOf=c=>{ const m=new Map(); fl.rows.forEach(r=>{ if(r.dup) return; const v=r.cells[c].v; m.set(v,(m.get(v)||0)+1); }); const key=v=>v.normalize('NFKC').toLowerCase().replace(/\(주\)|㈜|주식회사|\(유\)|유한회사/g,'').replace(/[\s\-_.,·()]/g,''); return [...m].map(([v,n])=>({v,n,k:key(v)})).sort((a,b)=>a.k<b.k?-1:a.k>b.k?1:b.n-a.n); };
+
+/* ===== [구역 D] 자동으로 고치기 화면 ===== */
+const NOTE={trim:'앞뒤나 글자 사이에 보이지 않는 빈칸이 붙은 값은 다른 값으로 세어져요.',date:'날짜가 여러 모양(2026.07.08 / 2026-07-08 / 엑셀 숫자)으로 섞이면 월별로 못 묶어요.',num:'숫자 뒤에 붙은 "원"·"개"나 쉼표 때문에 합계에 못 들어가는 값이 있어요.',same:'띄어쓰기·대소문자만 다른 같은 값은 하나로 합쳐요.',dup:'완전히 똑같은 줄이 두 번 들어 있으면 합계가 부풀어요.'};
+function found(k){ const seen=new Set(),out=[];
+  if(k==='dup'){ full.rows.forEach(r=>{ if(r.dup&&out.length<2) out.push('<code>'+esc(r.cells.slice(0,3).map(c=>c.v).join(' · '))+'</code>'); }); return out.join(', '); }
+  full.rows.forEach(r=>r.cells.forEach(c=>{ if(c.kinds.includes(k)&&out.length<3&&!seen.has(c.raw)){ seen.add(c.raw); out.push(`<code>${esc(vis(c.raw))}</code> → <code>${esc(vis(c.v))}</code>`); } })); return out.join(', '); }
+function ruleHTML(k){ const n=full.counts[k]; return `<label class="rule"><input type="checkbox" data-k="${k}" ${opts[k]?'checked':''}><span class="sw"></span><span class="t">${U.RULES[k]}<span class="n">${NOTE[k]}${n?`<span class="found">이 파일에서 찾은 것 (${n}${k==='dup'?'줄':'곳'}): ${found(k)}</span>`:''}</span></span></label>`; }
+function renderAuto(){ buildFinal(); const ks=Object.keys(U.RULES), yes=ks.filter(k=>full.counts[k]>0), no=ks.filter(k=>!full.counts[k]);
+  $('#rules').innerHTML=(yes.length?yes.map(ruleHTML).join(''):'<div class="callout ok">이 표에서는 자동으로 찾을 지저분한 곳이 없었어요. 다음 단계에서 직접 확인해 보세요.</div>')+(no.length?`<details class="more"><summary>이 표엔 해당 없는 규칙 ${no.length}개 (눌러서 보기)</summary>${no.map(ruleHTML).join('')}</details>`:'');
+  $$('#rules input').forEach(x=>x.onchange=()=>{ opts[x.dataset.k]=x.checked; const o=document.querySelector('#rules details')?.open; renderAuto(); if(o) $('#rules details').open=true; showDiff(x.dataset.k); });
+  if(!$('#diffbox').dataset.k) $('#diffbox').innerHTML='<span class="cap">스위치를 바꾸면 합계가 어떻게 달라지는지 여기에 보여 드려요.</span>';
+  $('#ctable').innerHTML=`<div class="stats"><div><div class="big-num">${fl.kept}줄</div><div class="big-lab">남은 줄 (전체 ${fl.total}줄)</div></div></div><div style="margin-top:10px"></div>`+U.cleanedTableHTML(fl); }
+function showDiff(k){ const box=$('#diffbox'); box.dataset.k=k;
+  if(k==='date'){ const di=types.indexOf('date'); if(di<0){box.innerHTML='이 표엔 날짜 열이 없어요.';return;} const n=o=>new Set(U.clean(T,types,o).rows.filter(r=>!r.dup).map(r=>{const v=r.cells[di].v; return U.parseDate(v,true)?U.parseDate(v,true).slice(0,7):v;})).size; const o2=Object.assign({},opts,{date:!opts.date}); box.innerHTML=`<b>날짜 모양 맞추기</b> ${opts.date?'켰더니':'껐더니'}<br>월별로 묶으면 <b>${n(opts)}묶음</b>이 돼요 (${opts.date?'끄면':'켜면'} ${n(o2)}묶음).`; return; }
+  const ni=types.map((x,i)=>x==='num'?i:-1).filter(i=>i>=0); if(!ni.length){box.innerHTML='';return;}
+  const col=ni.find(i=>/금액|매출/.test(T.header[i]))??ni[ni.length-1]; const other=Object.assign({},opts,{[k]:!opts[k]}); const a=U.colSum(U.clean(T,types,opts),col), b=U.colSum(U.clean(T,types,other),col); const on=opts[k], d=a-b;
+  box.innerHTML=`<b>"${U.RULES[k]}"</b> ${on?'켰더니':'껐더니'}<br>「${esc(T.header[col])}」 합계가 <b>${fmt(a)}</b> ${d===0?'— 이 규칙은 합계를 바꾸지 않아요.':`(${on?'끌 때':'켤 때'} ${fmt(b)}, 차이 <b>${fmt(Math.abs(d))}</b>)`}`; }
+
+/* ===== [구역 E] 내 손으로 고치기 화면 ===== */
+function renderManual(){ buildFinal();
+  $('#opsinfo').textContent=ops.length?`고친 기록 ${new Set(ops.map(o=>o.g)).size}건 · 마지막: ${opDesc(ops[ops.length-1])}`:'아직 고친 곳이 없어요.';
+  $('#undo').disabled=!ops.length; $('#undoall').hidden=!ops.length;
+  renderETable(); renderVBox(); renderRBox(); }
+function renderETable(){ const LIM=150, rows=fl.rows.slice(0,LIM);
+  let h=`<div class="tablebox"><table><thead><tr><th></th>${T.header.map((x,i)=>`<th class="${types[i]==='num'?'r':''}">${esc(x)}</th>`).join('')}</tr><tr class="typerow"><th></th>${types.map((ty,i)=>`<th><select data-t="${i}" aria-label="${esc(T.header[i])} 열 종류">${['date','num','text'].map(k=>`<option value="${k}" ${ty===k?'selected':''}>${U.TYPE_LABEL[k]}</option>`).join('')}</select></th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach((r,ri)=>{ h+=`<tr class="${r.dup?'dup':''}"><td>${r.dup?'':`<button class="x" data-del="${ri}" title="이 줄 지우기" aria-label="${ri+1}번째 줄 지우기">✕</button>`}</td>`+r.cells.map((c,ci)=>{ const chg=c.kinds.length&&!r.dup; return `<td class="${types[ci]==='num'?'r':''} ${chg?'chg':''}" ${r.dup?'':'contenteditable="true" spellcheck="false"'} data-r="${ri}" data-c="${ci}" data-v="${esc(c.v)}" ${chg?`data-from="${esc(c.raw)}"`:''}>${esc(c.v)}</td>`; }).join('')+'</tr>'; });
+  $('#etable').innerHTML=h+'</tbody></table></div>'+(fl.rows.length>LIM?`<p class="cap">처음 ${LIM}줄만 보여 드려요. 나머지 줄도 아래 ②·③의 합치기·바꾸기는 똑같이 적용돼요.</p>`:''); }
+$('#etable').addEventListener('focusout',e=>{ const td=e.target.closest&&e.target.closest('td[data-c]'); if(!td) return; const v=td.textContent.trim(); if(v!==td.dataset.v){ push({t:'cell',r:+td.dataset.r,c:+td.dataset.c,v}); renderManual(); } });
+$('#etable').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.matches&&e.target.matches('td[contenteditable]')){ e.preventDefault(); e.target.blur(); } });
+$('#etable').addEventListener('click',e=>{ const b=e.target.closest('[data-del]'); if(b){ push({t:'del',r:+b.dataset.del}); renderManual(); } });
+$('#etable').addEventListener('change',e=>{ const s=e.target.closest('[data-t]'); if(s){ types[+s.dataset.t]=s.value; cfg=U.pickDefaults(T,types); renderManual(); } });
+$('#undo').onclick=()=>{ undo(); renderManual(); };
+$('#undoall').onclick=()=>{ ops=[]; renderManual(); };
+function renderVBox(){ ventries=entriesOf(vcol).slice(0,300); vtouched=false;
+  const groups=[]; ventries.forEach((e,i)=>{ const g=groups[groups.length-1]; if(g&&g.k===e.k) g.items.push(i); else groups.push({k:e.k,items:[i]}); });
+  const nsim=groups.filter(g=>g.items.length>1).length;
+  let h=`<label class="fld" style="max-width:320px"><span>어느 열의 값을 볼까요?</span><select id="vcol">${T.header.map((x,i)=>`<option value="${i}" ${i===vcol?'selected':''}>${esc(x)}</option>`).join('')}</select></label>`;
+  h+=`<p class="cap">${ventries.length}가지 값 · ${nsim?`<b>주황 막대</b>로 표시된 ${nsim}묶음은 띄어쓰기·(주) 등만 달라서 같은 값일 가능성이 커요.`:'비슷해 보이는 값 묶음은 없어요. 뜻이 같은 값은 직접 골라 합치세요.'}</p><div class="vscroll">`;
+  groups.forEach((g,gi)=>{ h+=`<div class="vgrp ${g.items.length>1?'sim':''}">`+g.items.map(i=>`<label class="vrow"><input type="checkbox" data-i="${i}"><span class="vv">${esc(vis(ventries[i].v))}</span><span class="cap">${ventries[i].n}개</span></label>`).join('')+(g.items.length>1?`<button class="lnk" data-merge="${gi}" style="padding:2px 0">이 묶음을 가장 많은 값으로 합치기</button>`:'')+'</div>'; });
+  h+=`</div><div class="row" style="margin-top:12px"><span>고른 값을</span><input type="text" id="vto" style="width:240px" placeholder="합칠 이름" aria-label="합칠 이름"><span>(으)로</span><button class="btn2" id="vgo" disabled>하나로 합치기</button></div>`;
+  const box=$('#vbox'); box.innerHTML=h; box._groups=groups;
+  $('#vcol').onchange=e=>{ vcol=+e.target.value; renderVBox(); };
+  $('#vto').oninput=()=>{ vtouched=true; upd(); };
+  $$('#vbox .vrow input').forEach(x=>x.onchange=()=>{ const ch=picked(); if(!vtouched&&ch.length){ $('#vto').value=ch.slice().sort((a,b)=>b.n-a.n)[0].v; } upd(); });
+  $('#vgo').onclick=()=>merge(picked().map(e=>e.v),$('#vto').value.trim());
+  $$('#vbox [data-merge]').forEach(b=>b.onclick=()=>{ const items=box._groups[+b.dataset.merge].items.map(i=>ventries[i]); const to=items.slice().sort((a,b)=>b.n-a.n)[0].v; merge(items.map(e=>e.v),to); });
+  function picked(){ return $$('#vbox .vrow input:checked').map(x=>ventries[+x.dataset.i]); }
+  function upd(){ $('#vgo').disabled=picked().length<1||$('#vto').value.trim()===''&&false; }
+  upd(); }
+function merge(froms,to){ const g=++gid; let n=0; froms.forEach(v=>{ if(v!==to){ push({t:'map',c:vcol,from:v,to,g}); n++; } }); if(n){ renderManual(); } }
+function renderRBox(){ $('#rbox').innerHTML=`<div class="flds"><label class="fld"><span>어느 열에서?</span><select id="rcol"><option value="-1">모든 열</option>${T.header.map((x,i)=>`<option value="${i}">${esc(x)}</option>`).join('')}</select></label><label class="fld"><span>찾을 글자</span><input type="text" id="rfind" placeholder="예: (주)"></label><label class="fld"><span>바꿀 글자 (지우려면 비워 두기)</span><input type="text" id="rto"></label></div><p class="cap" id="rcount">찾을 글자를 적어 보세요.</p><button class="btn2" id="rgo" disabled>바꾸기</button>`;
+  const cnt=()=>{ const f=$('#rfind').value, c=+$('#rcol').value; let n=0; if(f) fl.rows.forEach(r=>{ if(!r.dup) r.cells.forEach((x,ci)=>{ if((c<0||c===ci)&&x.v.includes(f)) n++; }); }); $('#rcount').textContent=f?`${n}곳에서 찾았어요.`:'찾을 글자를 적어 보세요.'; $('#rgo').disabled=!n; };
+  ['rfind','rcol'].forEach(id=>$('#'+id).oninput=$('#'+id).onchange=cnt);
+  $('#rgo').onclick=()=>{ push({t:'rep',c:+$('#rcol').value,from:$('#rfind').value,to:$('#rto').value}); renderManual(); }; }
+
+/* ===== [구역 F] AI로 고치기 화면 ===== */
+function renderAI(){ buildFinal();
+  const tc=T.header.map((h,i)=>types[i]==='text'?i:-1).filter(i=>i>=0);
+  $('#aimask').innerHTML=tc.length?tc.map(i=>`<label><input type="checkbox" data-i="${i}" ${aiMask.has(i)?'checked':''}><span>${esc(T.header[i])} 가리기</span></label>`).join(''):'<span class="cap">글자 열이 없어요</span>';
+  $$('#aimask input').forEach(x=>x.onchange=()=>{ x.checked?aiMask.add(+x.dataset.i):aiMask.delete(+x.dataset.i); buildAIPrompt(); parseAI(); });
+  $('#aigoal').oninput=buildAIPrompt; buildAIPrompt(); parseAI(); $('#aiundo').disabled=!ops.length; }
+function buildAIPrompt(){ const g={}; aiMask.forEach(i=>g[T.header[i]]=entriesOf(i).map(e=>e.v)); aiMap=U.makeAliases(g);
+  const mv=(i,v)=>aiMask.has(i)&&aiMap[v]?aiMap[v]:v; let body='';
+  T.header.forEach((h,i)=>{ const es=entriesOf(i);
+    if(types[i]==='text'){ const show=es.slice(0,50); body+=`■ 「${h}」 (글자, 서로 다른 값 ${es.length}가지)\n  `+show.map(e=>`"${mv(i,e.v)}"(${e.n})`).join(', ')+(es.length>50?` … 외 ${es.length-50}가지`:'')+'\n\n'; }
+    else { const bad=es.filter(e=>e.v!==''&&(types[i]==='num'?isNaN(U.parseNum(e.v)):!U.parseDate(e.v,true))); const blank=es.find(e=>e.v==='');
+      body+=`■ 「${h}」 (${U.TYPE_LABEL[types[i]]}) — ${bad.length||blank?'이상한 값만 적었어요':'이상한 값 없음'}\n`+(bad.length?'  '+bad.slice(0,30).map(e=>`"${e.v}"(${e.n})`).join(', ')+'\n':'')+(blank?`  빈칸 ${blank.n}개\n`:'')+'\n'; } });
+  const goal=$('#aigoal').value.trim();
+  $('#aiprompt').value=`당신은 엑셀 표의 입력 실수와 표기 흔들림을 찾아 주는 꼼꼼한 도우미입니다.\n아래는 표의 열 이름과, 열마다 나온 값 목록입니다. 값 뒤 괄호의 숫자는 나온 횟수입니다. (총 ${fl.kept}줄)\n\n[고치고 싶은 점]\n${goal||'(따로 없음 — 같은 뜻인데 다르게 쓴 값, 오타, 단위·글자가 섞인 숫자, 날짜 형식 문제를 찾아 주세요)'}\n\n[열별 값]\n${body}[답하는 방법]\n- "바꾸기 목록"만 아래 형식의 표(세로선 | 로 나눔)로 답하고, 설명은 표 아래에 한두 줄만 쓰세요.\n  열 이름 | 원래 값 | 바꿀 값\n- 원래 값은 위 목록에 있는 값을 그대로 적으세요.\n- 줄 전체를 지워야 하면 바꿀 값에 (줄삭제)라고 적으세요.\n- 위 목록에 없는 값은 만들지 말고, 확실하지 않으면 바꾸지 마세요.\n- 숫자 열의 바꿀 값은 숫자만(쉼표·단위 없이), 날짜 열은 2026-07-08 모양으로 적으세요.`; }
+$('#aicp').onclick=()=>U.copy($('#aiprompt').value,$('#aifl'));
+const unq=s=>s.trim().replace(/^["'“”「」‘’]+|["'“”「」‘’]+$/g,'').trim();
+function parseAI(){ const raw=$('#aians').value; aiItems=[]; if(!raw.trim()){ $('#aiprev').innerHTML=''; $('#aiapply').disabled=true; return; }
+  const txt=U.restoreAlias(raw,aiMap); const norm=s=>s.replace(/[「」"'\s]/g,'');
+  txt.split(/\r?\n/).forEach(line=>{ line=line.trim(); if(!line||/^[\s|:\-]+$/.test(line)||(!line.includes('|')&&!line.includes('\t'))) return;
+    const p=line.replace(/^\||\|$/g,'').split(/\||\t/).map(s=>s.trim()); if(p.length<3) return; if(/원래/.test(p[1])&&/바꿀|새/.test(p[2])) return;
+    const c=T.header.findIndex(h=>norm(h)===norm(p[0])); let from=unq(p[1]), to=unq(p[2]); if(from==='(빈칸)') from=''; const del=/^\(?줄\s*삭제\)?$/.test(to); if(to==='(빈칸)') to='';
+    let n=0; if(c>=0) fl.rows.forEach(r=>{ if(!r.dup&&r.cells[c].v.trim()===from) n++; });
+    const status=c<0?'열 이름을 못 찾았어요':from===to&&!del?'바뀌는 게 없어요':n===0?'해당하는 값이 없어요':''; aiItems.push({c,col:p[0],from,to,del,n,ok:!status,status}); });
+  const ok=aiItems.filter(x=>x.ok);
+  $('#aiprev').innerHTML=aiItems.length?`<h3>미리 보기 <span class="cap">(${ok.length}개 적용 가능 · 합계 ${ok.reduce((a,x)=>a+x.n,0)}곳)</span></h3><div class="tablebox"><table><thead><tr><th>열</th><th>원래 값</th><th>바꿀 값</th><th class="r">해당</th><th></th></tr></thead><tbody>${aiItems.map(x=>`<tr style="${x.ok?'':'opacity:.5'}"><td>${esc(x.col)}</td><td><span class="vv">${esc(vis(x.from))}</span></td><td>${x.del?'<b>(줄 지우기)</b>':`<span class="vv">${esc(vis(x.to))}</span>`}</td><td class="r">${x.n}곳</td><td>${x.ok?'':`<span class="warn" style="font-size:15px">${x.status}</span>`}</td></tr>`).join('')}</tbody></table></div>`:'<div class="callout bad">바꾸기 목록 줄(열 이름 | 원래 값 | 바꿀 값)을 못 찾았어요. AI에게 "표 형식으로만 다시 답해 줘"라고 말해 보세요.</div>';
+  $('#aiapply').disabled=!ok.length; }
+$('#aians').oninput=parseAI;
+$('#aiapply').onclick=()=>{ const ok=aiItems.filter(x=>x.ok); if(!ok.length) return; const g=++gid; const cols=new Set(); ok.forEach(x=>{ push(x.del?{t:'delval',c:x.c,from:x.from,loose:true,g}:{t:'map',c:x.c,from:x.from,to:x.to,loose:true,g}); cols.add(x.c); });
+  buildFinal(); const ch=redetect([...cols]); const n=ok.reduce((a,x)=>a+x.n,0); $('#aians').value=''; renderAI(); $('#aimsg').textContent=`${ok.length}개를 적용했어요 (${n}곳)${ch.length?' · 열 종류가 바뀌었어요: '+ch.join(', '):''}`; $('#aiundo').disabled=false; };
+$('#aiundo').onclick=()=>{ undo(); renderAI(); $('#aimsg').textContent='되돌렸어요'; };
+
+/* ===== [구역 G] 합계 내기 ===== */
+function renderAgg(){ buildFinal(); const ct=U.cleanTable(fl);
+  U.aggControls($('#actl'),ct,types,cfg,draw); draw();
+  function draw(){ const a=U.aggregate(ct,types,cfg); $('#aout').innerHTML=`<div class="stats"><div><div class="big-num">${fmt(a.grand)}</div><div class="big-lab">${a.method==='avg'?'전체 평균':'전체'} ${U.METHOD[a.method]}</div></div><div><div class="big-num">${a.keys.length}</div><div class="big-lab">묶음 개수</div></div></div><div class="tablebox">${U.aggTable(a,ct.header[cfg.key],ct.header[cfg.val])}</div>`;
+    $('#achart').innerHTML=U.chart(a,kind); window._a=a; }
+  $$('#kind input').forEach(r=>r.onchange=()=>{kind=r.value;draw();}); }
+
+/* ===== [구역 H] 저장 ===== */
+$('#dl1').onclick=()=>{ buildFinal(); const t=U.cleanTable(fl); U.download(fname+'_정리됨.csv',U.toCSV([t.header].concat(t.rows))); };
+$('#dl2').onclick=()=>{ renderAgg(); U.download(fname+'_합계.csv',U.toCSV(U.aggRows(window._a,T.header[cfg.key]))); };
+$('#cp2').onclick=()=>{ renderAgg(); U.copy(U.aggRows(window._a,T.header[cfg.key]).map(r=>r.join('\t')).join('\n'),$('#fl')); };
+
+/* ===== [기능 추가 자리] 수업에서 AI로 만든 새 기능은 이 아래에 붙여요 ===== */
+})();
+</script>
+</body></html>

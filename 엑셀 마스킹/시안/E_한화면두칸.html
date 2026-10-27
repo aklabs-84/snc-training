@@ -1,0 +1,48 @@
+<!doctype html><meta charset=utf-8><title>시안 A</title><style>
+:root{--bg:#eef1f5;--panel:#fff;--ink:#14202e;--sub:#5b6878;--line:#cfd6e0;--pt:#d9481f;--mk:#ffd9c9;--mkt:#8a2a0c;--ok:#157347;--nav:#131f2d}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 Pretendard,"Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}
+.top{background:var(--nav);color:#fff;display:flex;align-items:center;gap:28px;padding:0 24px;height:60px}
+.top b{font-size:21px;font-weight:800}.top .tab{height:60px;display:flex;align-items:center;padding:0 6px;color:#9fb0c4;font-weight:700;border-bottom:3px solid transparent}
+.top .tab.on{color:#fff;border-color:var(--pt)}.top .sp{flex:1}.top .g{border:1.5px solid #fff;padding:4px 14px;border-radius:2px;font-weight:800;font-size:16px}
+.steps{display:flex;background:var(--panel);border-bottom:2px solid var(--ink)}
+.steps div{flex:1;padding:12px 24px;font-weight:800;font-size:18px;border-bottom:4px solid transparent;margin-bottom:-2px;color:var(--sub)}
+.steps div i{font-style:normal;font-size:30px;margin-right:10px;font-family:ui-monospace,Menlo,monospace}
+.steps .done{color:var(--ink)}.steps .done:after{content:" ✔";color:var(--ok)}.steps .on{color:var(--ink);border-color:var(--pt)}.steps .on i{color:var(--pt)}
+.btn{background:var(--pt);color:#fff;border:0;border-radius:2px;padding:10px 24px;font-weight:800;font-size:18px}
+.btn2{background:var(--panel);border:2px solid var(--ink);border-radius:2px;padding:8px 22px;font-weight:800;font-size:18px}
+.lnk{text-decoration:underline;text-underline-offset:5px;font-weight:700}
+.cap{font-size:14px;font-weight:800;letter-spacing:.14em;color:var(--sub)}
+.num{font-size:40px;font-weight:800;line-height:1;font-family:ui-monospace,Menlo,monospace}.lab{font-size:14px;color:var(--sub);font-weight:700}
+.sw{width:30px;height:18px;background:var(--pt);display:inline-block;position:relative;border-radius:2px;flex:none}.sw:after{content:"";position:absolute;right:3px;top:3px;width:12px;height:12px;background:#fff}
+.sw.off{background:none;border:2px solid var(--ink)}.sw.off:after{left:3px;right:auto;background:var(--ink);top:2px}
+table{border-collapse:collapse;width:100%;border-top:2px solid var(--ink);background:var(--panel)}
+th{text-align:left;padding:8px 14px;font-size:15px;color:var(--sub);white-space:nowrap;position:relative}
+th small{display:block;font-size:13px;font-weight:600;color:var(--sub)}
+th.chg{color:var(--ink)}th.chg small{color:var(--pt);font-weight:800}
+th .dot{display:inline-block;width:8px;height:8px;background:var(--pt);border-radius:50%;margin-right:6px}
+td{padding:9px 14px;border-top:1px solid var(--line);font-weight:600;white-space:nowrap;font-size:17px}
+.m{background:var(--mk);color:var(--mkt);padding:1px 7px;border-radius:2px;font-weight:800}
+.menu{position:absolute;top:100%;left:6px;z-index:5;background:var(--panel);border:2px solid var(--ink);width:230px;font-weight:700;color:var(--ink);font-size:16px}
+.menu div{padding:7px 14px;border-top:1px solid var(--line)}.menu div:first-child{border:0;font-size:13px;color:var(--sub)}
+.menu .sel{background:var(--mk);color:var(--mkt)}
+.tabs2{display:flex;gap:22px;margin:12px 0 0}.tabs2 span{font-weight:700;color:var(--sub);padding-bottom:3px}.tabs2 .on{color:var(--ink);border-bottom:3px solid var(--pt)}
+.ok{color:var(--ok);font-weight:800;font-size:16px}
+.row{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.row b{font-size:17px;display:block;line-height:1.3}.row small{color:var(--sub);font-size:14px;font-weight:600;font-family:ui-monospace,Menlo,monospace}
+ta{display:block}.ta{border:0;border-bottom:2px solid var(--ink);background:var(--bg);width:100%;padding:8px 10px;font:16px/1.6 inherit;min-height:84px;color:var(--ink)}
+.live{font-size:14px;color:var(--ok);font-weight:800;margin-top:6px}
+</style>
+<div class="top"><b>엑셀 마스킹</b><span class="tab on">가리기</span><span class="tab">되돌리기</span><span class="sp"></span><span class="g">사용법</span><span class="lnk">밝게/어둡게</span></div><div class="steps"><div class="done"><i>1</i>파일 올리기</div><div class="on"><i>2</i>고르고 · 확인하고 · 저장</div></div>
+<div style="display:grid;grid-template-columns:340px 1fr;gap:0;min-height:calc(100vh - 122px)">
+<aside style="background:var(--panel);border-right:2px solid var(--ink);padding:20px 22px"><div class="cap">가릴 것</div><div class="row"><span class="sw "></span><div><b>거래처 · 회사 이름</b><small>Nova Tech → A사</small></div></div><div class="row"><span class="sw "></span><div><b>사람 이름</b><small>김민수 → 담당자1</small></div></div><div class="row"><span class="sw "></span><div><b>전화번호</b><small>010-… → 전화1</small></div></div><div class="row"><span class="sw "></span><div><b>이메일</b><small>a@b.kr → 메일1</small></div></div><div class="row"><span class="sw "></span><div><b>주민등록번호</b><small>900101-… → 주민번호1</small></div></div><div class="row"><span class="sw off"></span><div><b>사업자등록번호</b><small>123-45-… → 사업자1</small></div></div>
+<div class="cap" style="margin-top:14px">내가 정한 말 <span class="lnk" style="font-weight:700;letter-spacing:0">? 어떻게 적어요</span></div>
+<div class="ta">프로젝트블루 → 알파<br>신제품X</div><div class="live">✔ 바로 반영됐어요 · 12칸 더 바뀜</div></aside>
+<main style="padding:20px 28px 0;display:flex;flex-direction:column"><div class="cap" style="margin-bottom:6px">결과 미리보기 · 설정을 바꾸면 바로 달라져요</div><div style="display:flex;gap:28px;align-items:flex-end"><div><div class="num">160</div><div class="lab">바뀐 칸</div></div><div><div class="num">7</div><div class="lab">서로 다른 이름·번호</div></div><div style="flex:1"></div></div>
+<div class="tabs2"><span class="on">입출고</span><span>품목</span></div><div style="margin-top:10px;flex:1;overflow:hidden"><table><thead><tr>
+<th>일자<small>그대로 · 추천</small></th>
+<th class="chg"><span class="dot"></span>거래처<small>거래처로 가리기 ▾</small></th>
+<th class="chg"><span class="dot"></span>담당자<small>사람으로 가리기 ▾</small><div class="menu"><div>이 칸을 어떻게 할까요?</div><div>그대로 두기</div><div class="sel">✔ 사람 이름으로 가리기 (추천)</div><div>거래처 이름으로 가리기</div><div>글 속에서 찾아 가리기</div><div>지우기</div></div></th>
+<th class="chg"><span class="dot"></span>연락처<small>글 속에서 찾기 ▾</small></th>
+<th>품목명<small>그대로 · 추천</small></th><th>수량<small>그대로 · 추천</small></th></tr></thead><tbody>
+<tr><td>2026-07-03</td><td><span class="m">A사</span></td><td><span class="m">담당자1</span></td><td><span class="m">전화1</span></td><td>에스프레소 원두</td><td>30</td></tr><tr><td>2026-07-08</td><td><span class="m">B사</span></td><td><span class="m">담당자2</span></td><td><span class="m">전화2</span></td><td>우유 1L</td><td>60</td></tr><tr><td>2026-07-15</td><td><span class="m">C사</span></td><td><span class="m">담당자3</span></td><td><span class="m">전화3</span></td><td>카라멜 시럽</td><td>24</td></tr><tr><td>2026-08-02</td><td><span class="m">D사</span></td><td><span class="m">담당자4</span></td><td><span class="m">전화4</span></td><td>오트밀크 1L</td><td>24</td></tr><tr><td>2026-08-19</td><td><span class="m">E사</span></td><td><span class="m">담당자5</span></td><td><span class="m">전화5</span></td><td>초코 파우더</td><td>10</td></tr><tr><td>2026-09-04</td><td><span class="m">A사</span></td><td><span class="m">담당자1</span></td><td><span class="m">전화1</span></td><td>디카페인 원두</td><td>12</td></tr><tr><td>2026-09-11</td><td><span class="m">F사</span></td><td><span class="m">담당자6</span></td><td><span class="m">전화6</span></td><td>휘핑크림</td><td>20</td></tr><tr><td>2026-09-21</td><td><span class="m">B사</span></td><td><span class="m">담당자2</span></td><td><span class="m">전화2</span></td><td>콜드브루 원액</td><td>12</td></tr><tr><td>2026-10-02</td><td><span class="m">C사</span></td><td><span class="m">담당자3</span></td><td><span class="m">전화3</span></td><td>바닐라 시럽</td><td>12</td></tr></tbody></table></div><div style="position:sticky;bottom:0;background:var(--panel);border-top:2px solid var(--ink);padding:12px 24px;display:flex;align-items:center;gap:16px"><span class="ok">✔ 남은 이름·번호 모양이 없어요</span><span style="flex:1"></span><span class="lab">저장은 두 개예요</span><span class="btn">① 가린 엑셀 저장</span><span class="btn2">② 별명표 저장</span></div></main></div>

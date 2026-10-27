@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이름 가리개 · 시안 B 작업대</title>
+<style>
+:root{
+  --bg:#eef1f5; --pane:#ffffff; --ink:#14202e; --sub:#5b6878; --line:#cfd6e0; --accent:#d9481f; --accent-ink:#fff;
+  --mark:#ffd9c9; --mark-ink:#8a2a0c; --back:#cfeedd; --back-ink:#0d4d2c; --warn:#b3261e; --ok:#157347;
+  --sans:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono","D2Coding",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#0d141d;--pane:#131c28;--ink:#e6ecf3;--sub:#9aa8b9;--line:#2a3646;--accent:#ff8a5c;--accent-ink:#1c0d06;--mark:#5a2a18;--mark-ink:#ffd0bd;--back:#16452d;--back-ink:#c9f2dc;--warn:#ff9a92;--ok:#6fd49c}
+}
+:root[data-theme="dark"]{--bg:#0d141d;--pane:#131c28;--ink:#e6ecf3;--sub:#9aa8b9;--line:#2a3646;--accent:#ff8a5c;--accent-ink:#1c0d06;--mark:#5a2a18;--mark-ink:#ffd0bd;--back:#16452d;--back-ink:#c9f2dc;--warn:#ff9a92;--ok:#6fd49c}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 var(--sans);-webkit-font-smoothing:antialiased}
+.app{display:grid;grid-template-columns:360px 1fr;grid-template-rows:auto 1fr;min-height:100vh}
+/* 위 줄 */
+.top{grid-column:1/-1;display:flex;align-items:stretch;justify-content:space-between;background:var(--ink);color:var(--bg);padding:0 24px;gap:16px;flex-wrap:wrap}
+.brand{font-weight:800;font-size:22px;letter-spacing:-.02em;padding:14px 0;display:flex;align-items:baseline;gap:14px}
+.brand small{font-weight:400;font-size:15px;opacity:.7}
+.tabs{display:flex}
+.tabs button{all:unset;cursor:pointer;padding:0 26px;display:flex;align-items:center;font-weight:700;font-size:18px;opacity:.65;border-bottom:4px solid transparent;transition:opacity .15s,border-color .15s}
+.tabs button:hover{opacity:1}
+.tabs button[aria-selected=true]{opacity:1;border-color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+/* 왼쪽 설정 */
+.rail{background:var(--pane);border-right:1px solid var(--line);padding:24px 24px 40px;overflow:auto}
+.rail h2{font:800 15px var(--sans);letter-spacing:.14em;color:var(--sub);margin:0 0 6px;text-transform:uppercase}
+.rail section+section{margin-top:34px}
+.line{border-top:1px solid var(--line)}
+.item{display:grid;grid-template-columns:30px 1fr;gap:2px 12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:center}
+.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.item label{cursor:pointer;font-weight:700;line-height:1.35}
+.item small{display:block;color:var(--sub);font-weight:400;font-size:15px;font-family:var(--mono)}
+.item .f{grid-column:2}
+/* 스위치 */
+.sw{appearance:none;-webkit-appearance:none;width:30px;height:18px;border:2px solid var(--ink);border-radius:2px;position:relative;cursor:pointer;background:transparent;transition:background .15s}
+.sw::after{content:"";position:absolute;top:1px;left:1px;width:10px;height:10px;background:var(--ink);transition:transform .15s,background .15s}
+.sw:checked{background:var(--accent);border-color:var(--accent)}
+.sw:checked::after{transform:translateX(12px);background:var(--accent-ink)}
+.sw:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+input[type=text],select{font:16px var(--sans);color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);padding:6px 0;width:100%;border-radius:0}
+input[type=text]:focus,select:focus{outline:none;border-bottom-color:var(--accent);box-shadow:0 1px 0 var(--accent)}
+select option{color:#000}
+.seg{display:flex;border:1px solid var(--ink);border-radius:2px;margin-top:10px}
+.seg button{all:unset;flex:1;text-align:center;padding:9px 4px;cursor:pointer;font-size:16px;font-weight:700;transition:background .12s}
+.seg button+button{border-left:1px solid var(--ink)}
+.seg button:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{color:var(--sub);font-size:15px;margin:8px 0 0}
+/* 오른쪽 작업면 */
+.stage{padding:24px 28px 120px;min-width:0}
+.bar{display:flex;gap:28px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.kpi{display:flex;gap:34px}
+.kpi div{line-height:1.15}
+.kpi b{display:block;font:800 44px var(--sans);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.kpi span{font-size:15px;color:var(--sub)}
+.acts{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.btn{font:800 18px var(--sans);padding:13px 24px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:2px;cursor:pointer;transition:transform .12s,filter .12s}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.lnk{all:unset;cursor:pointer;font-weight:700;text-decoration:underline;text-underline-offset:5px;color:var(--sub);font-size:16px}
+.lnk:hover{color:var(--ink)}.lnk:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.warn{color:var(--warn);font-size:16px;margin:0 0 6px}.good{color:var(--ok);font-size:16px;margin:0 0 6px}
+.tw{overflow:auto;background:var(--pane);border-top:2px solid var(--ink);border-bottom:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:17px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+thead th{vertical-align:bottom;font-weight:800;position:sticky;top:0;background:var(--pane);padding-top:14px}
+thead th small{display:block;font-weight:400;font-size:13px;color:var(--sub);margin-bottom:2px}
+thead select{font-size:15px;font-weight:700}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+tbody tr:hover td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+td mark{background:var(--mark);color:var(--mark-ink);padding:0 5px;border-radius:2px;font-weight:700}
+td mark.back{background:var(--back);color:var(--back-ink)}
+td.del{color:var(--sub);text-decoration:line-through}
+td.memo{white-space:normal;min-width:260px}
+.pane-title{font:800 15px var(--sans);letter-spacing:.14em;color:var(--sub);margin:30px 0 8px;text-transform:uppercase}
+textarea{width:100%;min-height:150px;font:17px/1.7 var(--sans);color:var(--ink);background:var(--pane);border:1px solid var(--line);border-radius:2px;padding:12px 14px;resize:vertical}
+textarea:focus{outline:none;border-color:var(--accent)}
+.txt{white-space:pre-wrap;background:var(--pane);border:1px solid var(--line);padding:12px 14px;min-height:80px;word-break:break-word}
+.txt mark{background:var(--back);color:var(--back-ink);padding:0 4px;border-radius:2px;font-weight:700}
+.drop{display:block;width:100%;background:none;border:0;border-bottom:2px dashed var(--line);padding:16px 0;color:var(--sub);font:inherit;font-size:16px;cursor:pointer;text-align:center;transition:.15s}
+.drop:hover,.drop.over{border-color:var(--accent);color:var(--ink);background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.view{display:none}.view.on{display:block;animation:fade .25s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--ink);color:var(--bg);padding:12px 22px;border-radius:2px;opacity:0;pointer-events:none;transition:.25s;font-size:16px;z-index:9}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.theme{all:unset;cursor:pointer;font-size:14px;opacity:.7;align-self:center;text-decoration:underline}
+.theme:hover{opacity:1}
+@media (max-width:900px){
+  .app{grid-template-columns:1fr}
+  .rail{border-right:0;border-bottom:1px solid var(--line)}
+  .stage{padding:20px 16px 100px}
+  .top{padding:0 16px}
+  .tabs button{padding:0 16px}
+  .kpi b{font-size:34px}
+  .btn{width:100%}
+  .acts{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">이름 가리개 <small>이 컴퓨터 안에서만 · 인터넷 없음</small></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected="true" data-tab="mask">가리기</button>
+      <button role="tab" aria-selected="false" data-tab="restore">되돌리기</button>
+    </div>
+    <button class="theme" id="theme">밝게/어둡게</button>
+  </div>
+
+  <aside class="rail">
+    <section>
+      <h2>1 · 자료</h2>
+      <button class="drop" id="drop" type="button">엑셀 파일을 끌어다 놓기<br><small>또는 눌러서 고르기 (.xlsx)</small></button>
+      <div class="seg" id="mode" role="group" aria-label="자료 종류">
+        <button aria-pressed="true" data-m="xl">표(엑셀)</button><button aria-pressed="false" data-m="tx">글 붙여넣기</button>
+      </div>
+      <p class="hint" id="modeHint">지금은 예시 표를 보여 주고 있어요.</p>
+    </section>
+    <section>
+      <h2>2 · 가릴 것</h2>
+      <div class="line" id="cats"></div>
+    </section>
+    <section>
+      <h2>3 · 별명 모양</h2>
+      <div class="seg" id="fmt" role="group" aria-label="별명 모양">
+        <button aria-pressed="true" data-f="plain">A사 · 담당자1</button><button aria-pressed="false" data-f="br">[회사A]</button>
+      </div>
+      <p class="hint">같은 이름은 항상 같은 별명이 돼요. 금액은 건드리지 않아요.</p>
+    </section>
+  </aside>
+
+  <main class="stage">
+    <!-- 가리기 -->
+    <div class="view on" id="v-mask">
+      <div class="bar">
+        <div class="kpi"><div><b id="k1">0</b><span>바뀐 칸</span></div><div><b id="k2">0</b><span>가린 이름 종류</span></div></div>
+        <div class="acts"><button class="lnk" id="dl">별명표 저장</button><button class="btn" id="copy">가린 결과 복사</button></div>
+      </div>
+      <div id="warns"></div>
+      <div id="xlView">
+        <div class="tw"><table id="tbl"></table></div>
+        <p class="hint">표 위쪽에서 칸마다 <b>가리기 / 그대로 / 지우기</b>를 고를 수 있어요. 색 칠한 칸이 바뀐 곳이에요.</p>
+      </div>
+      <div id="txView" style="display:none">
+        <div class="pane-title">넣은 글</div>
+        <textarea id="src" spellcheck="false" aria-label="가릴 글"></textarea>
+        <div class="pane-title">가려진 결과</div>
+        <div class="txt" id="txOut"></div>
+      </div>
+    </div>
+
+    <!-- 되돌리기 -->
+    <div class="view" id="v-restore">
+      <div class="bar">
+        <div class="kpi"><div><b id="r1">0</b><span>되돌린 곳</span></div></div>
+        <div class="acts"><button class="lnk" id="rsample">예시 답 넣기</button><button class="btn" id="copy2">되돌린 글 복사</button></div>
+      </div>
+      <div class="pane-title">AI의 답 붙여넣기</div>
+      <textarea id="ans" spellcheck="false" aria-label="AI 답변" placeholder="여기에 AI가 준 답을 붙여 넣으세요"></textarea>
+      <div class="pane-title">진짜 이름으로 되돌린 글</div>
+      <div class="txt" id="back"></div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const COLS=[
+ {n:"일자",t:"date",d:"keep"},{n:"거래처",t:"company",d:"mask"},{n:"담당자",t:"person",d:"mask"},
+ {n:"연락처",t:"phone",d:"mask"},{n:"이메일",t:"email",d:"mask"},{n:"금액(원)",t:"num",d:"keep"},{n:"메모",t:"memo",d:"keep"}
+];
+const ROWS=[
+ ["2026-07-03","Nova Tech","김민수","010-2345-6789","minsu.kim@novatech.co.kr","792,000","김민수 팀장 요청으로 재견적"],
+ ["2026-07-08","Sakura Parts","이서연","010-8765-4321","seoyeon@sakura-parts.com","1,250,000","단가 협의 완료"],
+ ["2026-07-15","대성정밀","박지훈","02-555-1234","jh.park@daesung.kr","3,410,000","납기 9/10로 조정"],
+ ["2026-08-02","미래모터스","최유진","010-4455-9087","yj.choi@miraemotors.kr","2,060,000",""],
+ ["2026-08-19","한빛전자","정하늘","010-7788-1200","haneul@hanbit.co.kr","1,880,000","010-7788-1200으로 회신 요망"],
+ ["2026-09-04","Nova Tech","김민수","010-2345-6789","minsu.kim@novatech.co.kr","1,640,000",""]
+];
+const CATS=[
+ {k:"company",t:"거래처 · 회사 이름",eg:"Nova Tech → A사",list:"Nova Tech, Sakura Parts, 대성정밀, 미래모터스, 한빛전자",on:true},
+ {k:"person",t:"사람 이름",eg:"김민수 → 담당자1",list:"김민수, 이서연, 박지훈, 최유진, 정하늘",on:true},
+ {k:"phone",t:"전화번호",eg:"010-… → 전화1",on:true},
+ {k:"email",t:"이메일",eg:"a@b.kr → 메일1",on:true},
+ {k:"rrn",t:"주민등록번호",eg:"900101-… → 주민번호1",on:true},
+ {k:"biz",t:"사업자등록번호",eg:"123-45-67890",on:true},
+ {k:"acct",t:"계좌번호",eg:"123-45-678901",on:false},
+];
+const RE={email:/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/,rrn:/\d{6}-[1-4]\d{6}/,biz:/\d{3}-\d{2}-\d{5}/,phone:/0\d{1,2}-\d{3,4}-\d{4}/,acct:/\d{2,6}-\d{2,6}-\d{3,8}(?:-\d{1,4})?/};
+const W={person:"담당자",phone:"전화",email:"메일",rrn:"주민번호",biz:"사업자번호",acct:"계좌"};
+const SAMPLE="7월 8일 Sakura Parts 이서연 과장과 통화. 단가 협의 후 견적 재전송을 요청했다.\n연락처 010-8765-4321, seoyeon@sakura-parts.com\n대성정밀 박지훈 대리는 납기를 9월 10일로 당겨 달라고 했다.";
+const st={on:Object.fromEntries(CATS.map(c=>[c.k,c.on])),list:Object.fromEntries(CATS.filter(c=>c.list).map(c=>[c.k,c.list])),fmt:"plain",mode:"xl",act:Object.fromEntries(COLS.map(c=>[c.n,c.d])),map:{}};
+
+function renderCats(){
+  $("#cats").innerHTML=CATS.map(c=>`<div class="item"><input class="sw" type="checkbox" id="c_${c.k}" data-k="${c.k}" ${st.on[c.k]?"checked":""}>
+   <label for="c_${c.k}">${c.t}<small>${c.eg}</small></label>
+   ${c.list?`<div class="f"><input type="text" data-l="${c.k}" value="${st.list[c.k]}" aria-label="${c.t} 목록"></div>`:""}</div>`).join("");
+}
+function alias(type,n){
+  const br=st.fmt==="br";
+  if(type==="company"){const L=String.fromCharCode(65+(n-1)%26)+(n>26?Math.ceil(n/26):"");return br?`[회사${L}]`:`${L}사`}
+  return br?`[${W[type]}${n}]`:`${W[type]}${n}`;
+}
+const cnt={};
+function getAlias(type,orig){
+  const key=type+"|"+orig.toLowerCase();
+  if(!st.map[key]){cnt[type]=(cnt[type]||0)+1;st.map[key]={orig,a:alias(type,cnt[type]),type}}
+  return st.map[key].a;
+}
+const esc=s=>String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const rx=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&");
+function names(){const o=[];for(const c of ["company","person"])if(st.on[c])st.list[c].split(/[,\n]/).map(s=>s.trim()).filter(Boolean).forEach(n=>o.push({n,c}));return o.sort((a,b)=>b.n.length-a.n.length)}
+/* 글 안에서 찾아 바꾸기: [{s}|{m}] 조각을 돌려줌 */
+function maskText(text){
+  const nm=names(),nmap=new Map(nm.map(o=>[o.n.toLowerCase(),o.c]));
+  const kinds=["email","rrn","biz","phone","acct"].filter(k=>st.on[k]);
+  const parts=kinds.map(k=>RE[k].source).concat(nm.map(o=>rx(o.n)));
+  if(!parts.length)return [{s:text}];
+  const re=new RegExp(parts.join("|"),"gi"),out=[];let last=0,m;
+  while((m=re.exec(text))){
+    const s=m[0];let type=nmap.get(s.toLowerCase())||kinds.find(k=>new RegExp("^(?:"+RE[k].source+")$").test(s));
+    if(!type)continue;
+    out.push({s:text.slice(last,m.index)},{m:getAlias(type,s)});last=m.index+s.length;
+  }
+  out.push({s:text.slice(last)});return out;
+}
+const html=(segs,cls="")=>segs.map(x=>x.m!=null?`<mark class="${cls}">${esc(x.m)}</mark>`:esc(x.s)).join("");
+const TYPE_OF={company:"company",person:"person",phone:"phone",email:"email"};
+
+function renderXl(){
+  st.map={};Object.keys(cnt).forEach(k=>delete cnt[k]);
+  let changed=0,left=[];
+  $("#tbl").innerHTML=`<thead><tr>${COLS.map(c=>`<th class="${c.t==="num"?"num":""}"><small>칸 이름</small>${c.n}
+   <select data-col="${c.n}" aria-label="${c.n} 칸 처리">${[["mask","가리기"],["keep","그대로"],["del","지우기"]].map(([v,l])=>`<option value="${v}" ${st.act[c.n]===v?"selected":""}>${l}</option>`).join("")}</select></th>`).join("")}</tr></thead>
+   <tbody>${ROWS.map(r=>`<tr>${r.map((v,i)=>{
+     const c=COLS[i],a=st.act[c.n];let cell,cls=c.t==="num"?"num":c.t==="memo"?"memo":"";
+     if(a==="del"){changed++;return `<td class="del ${cls}">(지워짐)</td>`}
+     if(a==="mask"&&v){
+       if(c.t==="memo"){const segs=maskText(v);if(segs.some(x=>x.m!=null))changed++;cell=html(segs);left.push(segs.filter(x=>x.s!=null).map(x=>x.s).join(""))}
+       else if(["company","person","phone","email"].includes(c.t)&&st.on[TYPE_OF[c.t]]){changed++;cell=`<mark>${esc(getAlias(c.t,v))}</mark>`}
+       else{cell=esc(v);left.push(v)}
+     }else{
+       cell=esc(v);left.push(v);
+     }
+     return `<td class="${cls}">${cell}</td>`}).join("")}</tr>`).join("")}</tbody>`;
+  $("#k1").textContent=changed;$("#k2").textContent=Object.keys(st.map).length;
+  showWarns(left.join("\n"));
+}
+function showWarns(leftText){
+  const w=[];
+  const ph=leftText.match(new RegExp(RE.phone.source,"g"));if(ph)w.push(`전화번호처럼 생긴 글자 ${ph.length}개가 그대로 남았어요.`);
+  const em=leftText.match(new RegExp(RE.email.source,"g"));if(em)w.push(`이메일처럼 생긴 글자 ${em.length}개가 그대로 남았어요.`);
+  const hit=names().filter(o=>new RegExp(rx(o.n),"i").test(leftText)).map(o=>o.n);if(hit.length)w.push(`목록에 있는 이름이 남았어요: <b>${[...new Set(hit)].join(", ")}</b>`);
+  const ko=leftText.match(/[가-힣]{2,4}\s?(?:과장|대리|팀장|부장|사원|차장|이사|사장)/g);if(ko)w.push(`이름 같아 보이는 글자: <b>${[...new Set(ko)].join(", ")}</b> — 가려지지 않았어요.`);
+  $("#warns").innerHTML=w.length?w.map(x=>`<p class="warn">⚠ ${x}</p>`).join(""):`<p class="good">✔ 남은 이름이나 번호처럼 보이는 글자가 없어요.</p>`;
+}
+function renderTx(){
+  st.map={};Object.keys(cnt).forEach(k=>delete cnt[k]);
+  const segs=maskText($("#src").value);
+  const n=segs.filter(x=>x.m!=null).length;
+  $("#txOut").innerHTML=html(segs).replace(/<mark class="">/g,"<mark style='background:var(--mark);color:var(--mark-ink)'>");
+  $("#k1").textContent=n;$("#k2").textContent=Object.keys(st.map).length;
+  showWarns(segs.filter(x=>x.s!=null).map(x=>x.s).join(""));
+}
+function render(){st.mode==="xl"?renderXl():renderTx();restore()}
+function restore(){
+  const a=$("#ans").value,pairs=Object.values(st.map).sort((x,y)=>y.a.length-x.a.length);
+  if(!pairs.length||!a){$("#back").textContent=a;$("#r1").textContent=0;return}
+  const re=new RegExp(pairs.map(p=>rx(p.a)).join("|"),"g"),segs=[];let last=0,m,n=0;
+  while((m=re.exec(a))){segs.push({s:a.slice(last,m.index)},{m:pairs.find(p=>p.a===m[0]).orig});last=m.index+m[0].length;n++}
+  segs.push({s:a.slice(last)});$("#back").innerHTML=html(segs);$("#r1").textContent=n;
+}
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800)}
+const copy=async t=>{try{await navigator.clipboard.writeText(t);toast("복사했어요")}catch{toast("복사가 막혀 있어요")}};
+function setMode(m){st.mode=m;$$("#mode button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.m===m));
+  $("#xlView").style.display=m==="xl"?"":"none";$("#txView").style.display=m==="tx"?"":"none";
+  $("#modeHint").textContent=m==="xl"?"지금은 예시 표를 보여 주고 있어요.":"글을 붙여 넣으면 바로 가려져요.";
+  if(m==="tx"&&!$("#src").value)$("#src").value=SAMPLE;render()}
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-tab]");if(t){$$(".tabs button").forEach(b=>b.setAttribute("aria-selected",b===t));$$(".view").forEach(v=>v.classList.toggle("on",v.id==="v-"+t.dataset.tab));restore()}
+  const m=e.target.closest("[data-m]");if(m)setMode(m.dataset.m);
+  const f=e.target.closest("[data-f]");if(f){st.fmt=f.dataset.f;$$("#fmt button").forEach(b=>b.setAttribute("aria-pressed",b===f));render()}
+});
+document.addEventListener("change",e=>{
+  const d=e.target.dataset;if(d.k){st.on[d.k]=e.target.checked;render()}
+  if(d.col){st.act[d.col]=e.target.value;render()}
+});
+document.addEventListener("input",e=>{const d=e.target.dataset;if(d.l){st.list[d.l]=e.target.value;render()}if(e.target.id==="src")render();if(e.target.id==="ans")restore()});
+$("#copy").onclick=()=>copy(st.mode==="xl"?[...$$("#tbl tr")].map(tr=>[...tr.children].map(c=>c.textContent.replace(/칸 이름|가리기그대로지우기|그대로가리기지우기|지우기가리기그대로/g,"").trim()).join("\t")).join("\n"):$("#txOut").textContent);
+$("#copy2").onclick=()=>copy($("#back").textContent);
+$("#dl").onclick=()=>toast("별명표 파일 저장 (실제 도구에서 동작)");
+$("#drop").onclick=()=>toast("엑셀 읽기는 실제 도구에서 동작해요");
+["dragover","dragenter"].forEach(ev=>$("#drop").addEventListener(ev,e=>{e.preventDefault();$("#drop").classList.add("over")}));
+["dragleave","drop"].forEach(ev=>$("#drop").addEventListener(ev,e=>{e.preventDefault();$("#drop").classList.remove("over");if(ev==="drop")toast("엑셀 읽기는 실제 도구에서 동작해요")}));
+$("#rsample").onclick=()=>{const k=Object.values(st.map);const a=k.find(v=>v.type==="company"),b=k.find(v=>v.type==="person");
+  $("#ans").value=`요약: ${a?a.a:"A사"}는 ${b?b.a:"담당자1"}를 통해 단가 협의를 마쳤고, 견적 재전송을 기다립니다.\n제안: ${a?a.a:"A사"}에는 이번 주 안에 확인 메일을 보내세요.`;restore()};
+$("#theme").onclick=()=>{const r=document.documentElement,d=matchMedia("(prefers-color-scheme:dark)").matches;r.dataset.theme=(r.dataset.theme||(d?"dark":"light"))==="dark"?"light":"dark"};
+renderCats();render();
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>시안 B · 표 중심형</title>
+<style>
+:root{--bg:#eef2f6;--paper:#fff;--text:#1d2733;--sub:#5d6b7a;--line:#d3dbe4;--accent:#1f5fbf;--flag:#ffe0cc;--flagline:#e0793a;--hl:#d9f2e0}
+@media(prefers-color-scheme:dark){:root{--bg:#161b22;--paper:#1f262f;--text:#e8edf3;--sub:#9aa7b5;--line:#33404e;--accent:#6aa8ff;--flag:#5a3318;--flagline:#f0955a;--hl:#1f4a2c}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:18px/1.6 -apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 90px}
+.steps{display:flex;gap:6px;margin-bottom:20px;font-size:17px}.steps div{flex:1;padding:10px 6px;border-bottom:4px solid var(--line);color:var(--sub);text-align:center}.steps .on{border-color:var(--accent);color:var(--text);font-weight:700}.steps .done{color:var(--accent)}
+h1{font-size:26px;margin:0 0 4px}.lead{color:var(--sub);margin:0 0 14px}
+.bar{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:12px}
+.bar .big{font-size:21px;font-weight:700;flex:1 1 200px}
+button{font:inherit;cursor:pointer;border-radius:6px}
+.btn{background:var(--accent);color:#fff;border:0;padding:9px 18px;font-weight:700}.btn:hover{filter:brightness(1.12)}
+.btn2{background:var(--paper);border:1.5px solid var(--line);color:var(--text);padding:7px 14px}.btn2:hover{border-color:var(--accent)}.btn2:disabled{opacity:.4;cursor:default}
+.tablebox{overflow:auto;background:var(--paper);border:1px solid var(--line);padding-bottom:150px}
+table{border-collapse:collapse;width:100%;font-size:18px}th,td{padding:10px 14px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:left;white-space:nowrap;position:relative}
+th{background:var(--bg);color:var(--sub);font-size:16px}td.r{text-align:right}
+td.flag{background:var(--flag);box-shadow:inset 0 0 0 2px var(--flagline);cursor:pointer}td.flag:hover{filter:brightness(.96)}
+td.ok{background:var(--hl)}tr.dup td{text-decoration:line-through;opacity:.4}
+td.flag::after{content:"!";position:absolute;right:4px;top:2px;font-size:13px;color:var(--flagline);font-weight:700}
+.pop{position:absolute;z-index:9;left:0;top:100%;background:var(--paper);color:var(--text);border:2px solid var(--accent);border-radius:8px;padding:12px 14px;min-width:290px;white-space:normal;box-shadow:0 8px 24px #0004;cursor:default;font-weight:400}
+.pop .q{font-weight:700;margin-bottom:6px}.pop .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.pop input{font:inherit;width:100%;padding:6px 8px;margin-top:6px}
+.pop small{color:var(--sub);display:block;font-size:15px}
+.ai{margin-top:24px;background:var(--paper);border:1.5px dashed var(--line);padding:14px 16px}
+.foot{display:flex;justify-content:flex-end;margin-top:22px}
+</style></head><body><div class="wrap">
+<div class="steps"><div class="done">① 파일 올리기 ✓</div><div class="on">② 고치기</div><div>③ 결과 받기</div></div>
+<h1>주황색 칸을 눌러 보세요</h1><p class="lead">앱이 이상하다고 본 칸이에요. 누르면 어떻게 고칠지 물어봐요. 다른 칸은 눌러서 바로 쓰면 돼요.</p>
+<div class="bar"><div class="big" id="cnt"></div><button class="btn2" id="all">추천대로 전부 고치기</button><button class="btn2" id="undo" disabled>↶ 되돌리기</button></div>
+<div class="tablebox"><table id="tb"></table></div>
+<div class="ai"><b>🤖 AI에게 도움 받기</b> — 앱이 못 찾은 이상한 점이 있을 때 <button class="btn2" style="margin-left:6px" onclick="alert('시안: 여기서 \n① 고치고 싶은 점을 적고 ② 질문 복사 ③ AI 답을 붙여넣는 순서 안내가 열려요')">열기</button></div>
+<div class="foot"><button class="btn" id="next">다음: 결과 받기 →</button></div>
+</div>
+<script>
+const base=[["2026.03.02","서울","사과 ","12,000원"],["2026-03-05","서울시","사과","8000"],["2026/03/09","부산","배","15,000"],["2026-03-09","부산","배","15,000"],["2026-03-11"," 서울","포도","9000"],["2026-04-01","대구","사과","7000"],["2026.04.03","서울시","배","11,000원"]];
+let rows=base.map(r=>({c:r.slice(),ok:[0,0,0,0],dup:false})),hist=[],open=null;
+const sug=(r,i)=>{const v=r.c[i];if(i==0&&/[./]/.test(v))return{to:v.replace(/[./]/g,'-'),why:'날짜 모양을 2026-03-02로 맞춰요'};if(i==3&&/[,원]/.test(v))return{to:v.replace(/[,원]/g,''),why:'"원"과 쉼표를 빼야 합계에 들어가요'};if(v!==v.trim())return{to:v.trim(),why:'보이지 않는 빈칸을 지워요'};if(i==1&&v.trim()==='서울시')return{to:'서울',why:'"서울"과 같은 곳으로 보여요'};return null};
+const isDup=(r,i)=>!r.dup&&rows.findIndex(x=>!x.dup&&x.c.join('|')===r.c.join('|'))<i;
+function same(r,i){const s=sug(r,i);return rows.flatMap((x,xi)=>x.c.map((v,ci)=>({x,xi,ci}))).filter(o=>{const t=sug(o.x,o.ci);return t&&s&&ci(o)===ci0(i)&&t.to===s.to&&o.x.c[o.ci]===r.c[i]});function ci(o){return o.ci}function ci0(k){return k}}
+function snap(){hist.push(JSON.stringify(rows))}
+function draw(){let n=0;document.getElementById('tb').innerHTML='<tr><th></th><th>날짜</th><th>지점</th><th>상품</th><th class="r">매출</th></tr>'+rows.map((r,ri)=>{const d=isDup(r,ri);if(d)n++;return`<tr class="${r.dup?'dup':''}"><th>${ri+1}</th>`+r.c.map((v,i)=>{const s=!r.dup&&sug(r,i);if(s)n++;const f=s||(i==0&&d);return`<td class="${i==3?'r':''} ${s||d&&i==0?'flag':''} ${r.ok[i]?'ok':''}" ${s||d&&i==0?`data-f="${ri},${i}"`:r.dup?'':`contenteditable="true" data-e="${ri},${i}"`}>${v.replace(/^ | $/g,m=>'␣')}${open===ri+','+i?pop(r,ri,i,d&&i==0&&!s):''}</td>`}).join('')+'</tr>'}).join('');
+document.getElementById('cnt').textContent=n?`이상한 칸 ${n}곳 남았어요`:'모두 고쳤어요 🎉';document.getElementById('all').disabled=!n;document.getElementById('undo').disabled=!hist.length}
+function pop(r,ri,i,dp){if(dp)return`<div class="pop"><div class="q">같은 줄이 두 번 들어 있어요</div><small>이 줄을 지워도 괜찮을까요?</small><div class="row"><button class="btn" data-a="delrow,${ri}">예, 이 줄 지우기</button><button class="btn2" data-a="close">그대로 두기</button></div></div>`;const s=sug(r,i),m=rows.reduce((a,x)=>a+x.c.filter((v,ci)=>ci==i&&v===r.c[i]).length,0);return`<div class="pop"><div class="q">'${r.c[i].trim()||'(빈칸)'}' → '${s.to}' 로 고칠까요?</div><small>${s.why}</small><input data-own value="${s.to}" aria-label="직접 쓰기"><div class="row"><button class="btn" data-a="one,${ri},${i}">이 칸만 고치기</button>${m>1?`<button class="btn2" data-a="all,${ri},${i}">같은 값 ${m}곳 모두</button>`:''}<button class="btn2" data-a="close">닫기</button></div></div>`}
+document.getElementById('tb').addEventListener('click',e=>{const a=e.target.closest('[data-a]');if(a){const [k,r,i]=a.dataset.a.split(',');const own=e.target.closest('.pop').querySelector('[data-own]');const val=own?own.value:null;if(k=='close'){open=null}else{snap();if(k=='delrow')rows[+r].dup=true;if(k=='one'){rows[+r].c[+i]=val;rows[+r].ok[+i]=1}if(k=='all'){const f=rows[+r].c[+i];rows.forEach(x=>{if(x.c[+i]===f){x.c[+i]=val;x.ok[+i]=1}})}open=null}draw();return}
+if(e.target.closest('.pop'))return;const t=e.target.closest('[data-f]');if(t){open=t.dataset.f;draw()}});
+document.getElementById('tb').addEventListener('focusout',e=>{const t=e.target.closest('[data-e]');if(!t)return;const [r,i]=t.dataset.e.split(',');const v=t.textContent.replace(/␣/g,' ');if(v!==rows[r].c[i]){snap();rows[r].c[i]=v;rows[r].ok[i]=1;draw()}});
+document.getElementById('all').onclick=()=>{snap();open=null;rows.forEach(r=>r.c.forEach((v,i)=>{const s=sug(r,i);if(s){r.c[i]=s.to;r.ok[i]=1}}));rows.forEach((r,i)=>{if(isDup(r,i))r.dup=true});draw()};
+document.getElementById('undo').onclick=()=>{rows=JSON.parse(hist.pop());open=null;draw()};
+draw();
+</script></body></html>

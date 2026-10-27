@@ -1,0 +1,82 @@
+<title>③ 업무 보고서·회의자료 도우미</title>
+<div class="wrap">
+<header class="top"><p class="step">앱 ③ / 3</p><h1>업무 보고서·회의자료 도우미</h1><p class="lead">숫자 자료를 올리고 몇 가지만 고르면, AI가 보고서 초안을 쓰도록 질문을 만들어 줍니다.</p></header>
+<div id="subtabs" role="tablist"></div>
+
+<section class="sub">
+<h2>자료 올리기</h2><p class="why">보고에 쓸 숫자표를 올리세요. 앱 ①의 합계표나 정리된 표 모두 괜찮아요.</p>
+<!--LOAD-->
+<div id="preview" hidden><h3>이렇게 읽었어요</h3><div id="ptable"></div></div>
+</section>
+
+<section class="sub">
+<h2>무슨 글을 쓸까요?</h2><p class="why">고르는 대로 질문이 달라져요.</p>
+<h3>글의 종류</h3>
+<div class="seg" id="dockind"><label><input type="radio" name="dk" value="report" checked><span>경영진 보고서</span></label><label><input type="radio" name="dk" value="meeting"><span>회의자료 (슬라이드 구성)</span></label><label><input type="radio" name="dk" value="minutes"><span>회의 안건 정리</span></label></div>
+<div class="flds">
+<label class="fld"><span>누가 읽나요?</span><select id="who"><option>사장님·임원</option><option>팀장·부서원</option><option>고객사·외부</option></select></label>
+<label class="fld"><span>분량</span><select id="len"><option>짧게 (5줄)</option><option selected>보통 (A4 반 장)</option><option>자세히 (A4 한 장)</option></select></label>
+<label class="fld"><span>어느 기간의 자료인가요?</span><input type="text" id="period" placeholder="예: 2026년 3분기"></label>
+</div>
+<div class="fld"><span>꼭 넣고 싶은 말·분위기 (없으면 비워 두세요)</span><input type="text" id="memo" placeholder="예: 불량률 개선을 강조하고 싶어요"></div>
+</section>
+
+<section class="sub">
+<h2>AI에게 질문하기</h2><p class="why">질문을 복사해 ChatGPT나 Gemini에 붙여넣으세요. 거래처 이름은 가려서 보내요.</p>
+<div id="maskcols" class="seg"></div>
+<div class="promptbox"><textarea id="prompt" readonly aria-label="AI에게 보낼 질문"></textarea></div>
+<div class="row"><button class="btn" id="cpq">질문 복사하기</button><span class="flash" id="fl"></span></div>
+<div class="ai"><a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT 열기<small>붙여넣고 엔터</small></a><a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini 열기<small>붙여넣고 엔터</small></a></div>
+<p class="cap" id="maskinfo"></p>
+</section>
+
+<section class="sub printme" id="s4">
+<h2>답 붙여넣고 다듬기</h2><p class="why">AI가 쓴 글을 붙여넣으면 이름을 되돌리고, 숫자가 자료와 맞는지 검사해 드려요.</p>
+<textarea class="big" id="ans" placeholder="AI 답변을 여기에 붙여넣기"></textarea>
+<div class="callout" id="numchk" hidden></div>
+<h3>완성 글 <span class="cap">(여기서 직접 고쳐도 돼요)</span></h3>
+<div class="doc" id="doc" contenteditable="true" style="white-space:pre-wrap;min-height:160px" aria-label="완성 글"></div>
+<div class="row noprint"><button class="btn" id="dldoc">워드 파일로 받기 (.doc)</button><button class="btn2" id="cpdoc">글 복사</button><button class="btn2" id="prn">인쇄 / PDF로 저장</button><span class="flash" id="fl2"></span></div>
+</section>
+<div id="nav"></div>
+</div>
+<script>
+(function(){const {$,$$,esc,fmt}=U;
+let T=null,types=[],map={},maskSel=new Set(),okNums=new Set();
+const st=U.stepper(['자료 올리기','글 고르기','AI 질문','답 다듬기'],i=>{ if(i>0&&!T){ st.show(0); U.flash($('#msg'),'먼저 표를 올려 주세요'); return;} if(i===2) renderAsk(); document.body.classList.toggle('p4',i===3); });
+function setTable(t){ T=t; types=U.detectTypes(t); maskSel=new Set(); t.header.forEach((h,i)=>{ if(types[i]==='text' && /거래처|공급처|업체|고객|회사|바이어|담당|이름|성명/.test(h)) maskSel.add(i); });
+  $('#preview').hidden=false; U.previewTable($('#ptable'),t,types,()=>{}); }
+U.attachLoader({drop:'#drop',file:'#file',sheet:'#sheet',msg:'#msg',paste:'#paste',onTable:setTable});
+$$('#samples button').forEach(b=>b.onclick=()=>{ const c=U.toTable(U.parseDelim(window.SNC_RAW[b.dataset.s])); const ty=U.detectTypes(c); const t=U.cleanTable(U.clean(c,ty)); $('#msg').textContent='연습용 자료를 정리해서 불러왔어요 ('+t.rows.length+'줄)'; $('#msg').className='hint'; setTable(t); });
+function summary(){ /* 자료 요약: 숫자열 합계 + 월별/묶음 합계 */
+  const nums=types.map((x,i)=>x==='num'?i:-1).filter(i=>i>=0); okNums=new Set(); const add=v=>{ okNums.add(String(Math.round(v*10)/10)); okNums.add(String(Math.round(v))); };
+  let out=''; T.rows.length>40 ? out+='' : 0;
+  nums.forEach(i=>{ const s=T.rows.reduce((a,r)=>a+(U.parseNum(r[i])||0),0); add(s); out+=`- ${T.header[i]} 전체 합계: ${fmt(s)}\n`; });
+  const dateC=types.indexOf('date'), textC=types.map((x,i)=>x==='text'&&new Set(T.rows.map(r=>r[i])).size<=15?i:-1).filter(i=>i>=0);
+  const main=nums.find(i=>/금액|매출|합계/.test(T.header[i]))??nums.find(i=>/수량|생산/.test(T.header[i]))??nums[0];
+  const groups=[]; if(dateC>=0) groups.push([dateC,true]); textC.slice(0,3).forEach(i=>groups.push([i,false]));
+  if(main!=null) groups.forEach(([g,mo])=>{ const a=U.aggregate(T,types,{key:g,month:mo,val:main,method:'sum',split:-1}); out+=`\n[${T.header[g]}${mo?' 월별':'별'} ${T.header[main]} 합계]\n`; a.keys.forEach(k=>{ const v=a.rowTot(k); add(v); out+=`${(maskSel.has(g)&&map[k])||k}: ${fmt(v)}\n`; }); });
+  /* 불량률 같은 비율 */
+  const bad=nums.find(i=>/불량/.test(T.header[i])), prod=nums.find(i=>/생산/.test(T.header[i]));
+  if(bad!=null&&prod!=null){ const b=T.rows.reduce((a,r)=>a+(U.parseNum(r[bad])||0),0), p=T.rows.reduce((a,r)=>a+(U.parseNum(r[prod])||0),0); if(p){ const r=Math.round(b/p*1000)/10; okNums.add(String(r)); out+=`\n전체 불량률: ${r}%\n`; } }
+  return out; }
+function renderAsk(){ const textCols=T.header.map((h,i)=>types[i]==='text'?i:-1).filter(i=>i>=0);
+  $('#maskcols').innerHTML=textCols.length?'<span class="cap" style="width:100%">가릴 이름 열:</span>'+textCols.map(i=>`<label><input type="checkbox" data-i="${i}" ${maskSel.has(i)?'checked':''}><span>${esc(T.header[i])}</span></label>`).join(''):'';
+  $$('#maskcols input').forEach(x=>x.onchange=()=>{ x.checked?maskSel.add(+x.dataset.i):maskSel.delete(+x.dataset.i); build(); });
+  ['dockind','who','len','period','memo'].forEach(id=>{ const e=$('#'+id); e.oninput=e.onchange=build; }); build(); }
+const KIND={report:['경영진 보고서','① 한 줄 결론 ② 핵심 숫자 3개 ③ 눈에 띄는 점과 이유(추정이면 추정이라고) ④ 다음 달 할 일 2~3개'],meeting:['회의자료 슬라이드 구성안','슬라이드 5~7장. 장마다 "제목 / 들어갈 숫자 / 한 줄 메시지 / 어울리는 그래프 종류"를 적어 주세요'],minutes:['회의 안건 정리','① 오늘 논의할 안건 3~5개 ② 안건마다 근거 숫자 ③ 결정이 필요한 질문']};
+function build(){ const g={}; maskSel.forEach(i=>g[T.header[i]]=T.rows.map(r=>r[i])); map=U.makeAliases(g);
+  const k=document.querySelector('input[name=dk]:checked').value; const [kn,fmtTxt]=KIND[k];
+  const q=`당신은 제조업 회사(에스앤씨)의 업무 보고를 도와주는 비서입니다.\n\n[만들 것] ${kn}\n[읽는 사람] ${$('#who').value}\n[분량] ${$('#len').value}\n[기간] ${$('#period').value||'(미정)'}\n[구성] ${fmtTxt}${$('#memo').value?'\n[강조] '+$('#memo').value:''}\n\n[자료] (이름은 A, B처럼 바꿔 놓았어요)\n${summary()}\n[규칙]\n- 위 자료의 숫자만 쓰세요. 없는 숫자를 만들거나 계산해서 새 숫자를 내지 마세요.\n- 원인은 확인된 것이 아니면 "추정"이라고 적으세요.\n- 쉬운 말로, 단위(원·개·%)를 꼭 붙이세요.`;
+  $('#prompt').value=q; const n=Object.keys(map).length; $('#maskinfo').textContent=n?`가려진 이름 ${n}개 (예: ${Object.keys(map).slice(0,2).map(x=>x+' → '+map[x]).join(', ')})`:'가릴 이름 열이 선택되지 않았어요.'; }
+$('#cpq').onclick=()=>U.copy($('#prompt').value,$('#fl'));
+function check(){ const raw=$('#ans').value, t=U.restoreAlias(raw,map); $('#doc').textContent=t; const box=$('#numchk');
+  if(!raw.trim()){ box.hidden=true; return; }
+  const nums=[...new Set((raw.match(/\d[\d,]*(\.\d+)?/g)||[]).map(x=>x.replace(/,/g,'')).filter(x=>x.length>=3))]; const bad=nums.filter(n=>!okNums.has(n)&&!okNums.has(String(+n)));
+  box.hidden=false; box.className='callout '+(bad.length?'bad':'ok'); box.innerHTML=bad.length?`<b>자료에 없는 숫자 ${bad.length}개:</b> ${bad.slice(0,10).join(', ')}<br>AI가 계산했거나 지어낸 숫자일 수 있어요. 아래 글에서 해당 숫자를 찾아 확인하거나 고치세요.`:`<b>글에 나온 숫자(${nums.length}개)가 모두 자료와 맞아요.</b>`; }
+$('#ans').oninput=check;
+$('#dldoc').onclick=()=>U.download('보고서.doc','<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><style>body{font-family:"맑은 고딕",sans-serif;font-size:11pt;line-height:1.7}</style></head><body>'+U.esc($('#doc').innerText).replace(/\n/g,'<br>')+'</body></html>','application/msword');
+$('#cpdoc').onclick=()=>U.copy($('#doc').innerText,$('#fl2'));
+$('#prn').onclick=()=>window.print();
+})();
+</script>

@@ -1,0 +1,222 @@
+<title>① 엑셀 정리·집계 도우미</title>
+<style>
+td[contenteditable]:focus{outline:2px solid var(--c2);outline-offset:-2px;background:var(--paper);cursor:text}
+td[contenteditable]{cursor:text}
+.vgrp{padding:2px 0;margin:8px 0;border-left:4px solid transparent;padding-left:12px}
+.vgrp.sim{border-left-color:var(--c2);background:var(--paper)}
+.vrow{display:flex;gap:10px;align-items:center;padding:3px 0;cursor:pointer}
+.vrow input{width:20px;height:20px;accent-color:var(--accent)}
+.vv{font-family:ui-monospace,Menlo,monospace}
+.vscroll{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:8px 14px;background:var(--bg)}
+details.more{margin:10px 0}details.more summary{cursor:pointer;color:var(--sub);padding:8px 0}
+.found{display:block;color:var(--text);font-size:16px;margin-top:2px}
+.found code,.vv{background:var(--bg);padding:0 5px;border-radius:3px}
+.x{border:0;background:none;color:var(--sub);cursor:pointer;font-size:16px;padding:0 6px}.x:hover{color:var(--warn)}
+</style>
+<div class="wrap">
+<header class="top"><p class="step">앱 ① / 3</p><h1>엑셀 정리·집계 도우미</h1><p class="lead">지저분한 엑셀 표를 올리면 → 자동으로, 내 손으로, AI와 함께 고치고 → 합계까지 내 줍니다.</p></header>
+<div id="subtabs" role="tablist"></div>
+
+<!-- ===== [구역 1] 표 올리기 ===== -->
+<section class="sub">
+<h2>표 올리기</h2><p class="why">매달 쓰는 엑셀 파일을 그대로 올리세요. 첫 줄은 제목 줄이어야 해요.</p>
+<!--LOAD-->
+<div id="preview" hidden>
+<h3>이렇게 읽었어요 <span class="cap">(위에서 6줄만 보여 드려요)</span></h3>
+<p class="cap">제목 아래 칸은 앱이 짐작한 <b>열 종류</b>예요. 틀렸으면 눌러서 바꾸세요. (날짜 / 숫자 / 글자)</p>
+<div id="ptable"></div>
+</div>
+</section>
+
+<!-- ===== [구역 2] 자동으로 고치기 ===== -->
+<section class="sub">
+<h2>자동으로 고치기</h2><p class="why">흔한 지저분함을 앱이 찾아서 고쳐요. 이 파일에서 찾은 것만 보여 드려요. 스위치를 끄고 켜 보세요. 노란 칸에 마우스를 올리면 원래 모양이 보여요.</p>
+<div id="rules"></div>
+<div id="diffbox"></div>
+<div id="ctable"></div>
+</section>
+
+<!-- ===== [구역 3] 직접 고치기 ===== -->
+<section class="sub">
+<h2>내 손으로 고치기</h2><p class="why">자동으로 못 잡은 것은 직접 고쳐요. 고친 건 모두 기록되고, 언제든 되돌릴 수 있어요.</p>
+<div class="row"><button class="btn2" id="undo">↶ 되돌리기</button><button class="lnk" id="undoall">모두 되돌리기</button><span class="cap" id="opsinfo"></span></div>
+<h3>① 칸을 눌러 바로 고치기 <span class="cap">(고친 뒤 다른 곳을 누르면 저장돼요 · ✕는 줄 지우기)</span></h3>
+<div id="etable"></div>
+<h3>② 같은 뜻인데 다르게 쓴 값 하나로 합치기</h3>
+<div id="vbox"></div>
+<h3>③ 글자를 찾아서 바꾸기</h3>
+<div id="rbox"></div>
+</section>
+
+<!-- ===== [구역 4] AI로 고치기 ===== -->
+<section class="sub">
+<h2>AI와 함께 고치기</h2><p class="why">① 고치고 싶은 점을 적으면 → ② 앱이 AI에게 보낼 질문을 만들어 줘요 → ③ AI가 준 "바꾸기 목록"을 붙여넣으면 → ④ 미리 보고 적용해요.<br>AI는 표를 다시 쓰지 않고 <b>바꿀 목록만</b> 답해요. 그래서 숫자가 몰래 바뀔 걱정이 없어요.</p>
+<label class="fld"><span>고치고 싶은 점 (말로 적으세요. 비워 두면 AI가 이상한 값을 알아서 찾아요)</span><textarea id="aigoal" style="min-height:90px" placeholder="예: 거래처 이름 뒤의 (주)를 빼고 싶어요 / 금액에 '약 5만' 같은 글자가 섞여 있어요"></textarea></label>
+<h3>이름 가려서 보내기</h3>
+<p class="cap">AI에게 값 목록이 같이 나가요. 거래처·사람 이름 열은 A, B로 바꿔서 보내고, 답이 오면 앱이 원래대로 되돌려요.</p>
+<div class="seg" id="aimask"></div>
+<h3>AI에게 보낼 질문</h3>
+<div class="promptbox"><textarea id="aiprompt" readonly aria-label="AI에게 보낼 질문"></textarea></div>
+<div class="row"><button class="btn" id="aicp">질문 복사하기</button><span class="flash" id="aifl"></span></div>
+<div class="ai"><a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT 열기<small>붙여넣고 엔터</small></a><a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini 열기<small>붙여넣고 엔터</small></a></div>
+<h3>AI가 준 바꾸기 목록 붙여넣기</h3>
+<textarea class="big" id="aians" style="min-height:140px" placeholder="열 이름 | 원래 값 | 바꿀 값  ← 이런 줄들을 그대로 붙여넣으세요"></textarea>
+<div id="aiprev"></div>
+<div class="row"><button class="btn" id="aiapply" disabled>이대로 적용하기</button><button class="btn2" id="aiundo">↶ 되돌리기</button><span class="flash" id="aimsg"></span></div>
+</section>
+
+<!-- ===== [구역 5] 합계 내기 ===== -->
+<section class="sub">
+<h2>합계 내기</h2><p class="why">골라서 맞추면 자동으로 계산돼요. 엑셀 함수는 필요 없어요.</p>
+<div id="actl"></div>
+<div id="aout"></div>
+<h3>그림으로 보기</h3>
+<div class="seg" id="kind"><label><input type="radio" name="k" value="bar" checked><span>세로 막대</span></label><label><input type="radio" name="k" value="hbar"><span>가로 막대</span></label><label><input type="radio" name="k" value="line"><span>꺾은선</span></label></div>
+<div id="achart"></div>
+</section>
+
+<!-- ===== [구역 6] 저장 ===== -->
+<section class="sub">
+<h2>저장하고 다음 앱으로</h2><p class="why">정리된 표를 파일로 받아 두면, 다음 앱(분석·보고서)에서 그대로 올릴 수 있어요.</p>
+<div class="row"><button class="btn" id="dl1">정리된 표 받기 (.csv)</button><button class="btn2" id="dl2">합계표 받기 (.csv)</button><button class="btn2" id="cp2">합계표 복사 (엑셀에 붙이기)</button><span class="flash" id="fl"></span></div>
+<div class="callout ok"><b>다음 달엔?</b> 새 엑셀 파일만 올리면 같은 규칙으로 바로 정리돼요. (직접·AI로 고친 건 파일마다 새로 해요)</div>
+<p>받은 .csv 파일은 엑셀에서 더블클릭하면 열려요. 다음 앱: <b>② 분석·시각화 앱</b>, <b>③ 보고서 앱</b>에서 이 파일을 올리세요.</p>
+</section>
+<div id="nav"></div>
+</div>
+<script>
+(function(){const {$,$$,esc,fmt}=U;
+/* ===== [구역 A] 앱이 기억하는 것 ===== */
+let T=null,types=[],opts=Object.assign({},U.ALL_ON),fl=null,full=null,ops=[],gid=0,cfg=null,kind='bar',fname='표';
+let vcol=0,ventries=[],vtouched=false,aiMask=new Set(),aiMap={},aiItems=[];
+const st=U.stepper(['표 올리기','자동 고치기','내 손으로','AI로 고치기','합계 내기','저장'],i=>{ if(i>0&&!T){ st.show(0); U.flash($('#msg'),'먼저 표를 올려 주세요'); return;} const f={1:renderAuto,2:renderManual,3:renderAI,4:renderAgg}[i]; if(f) f(); });
+U.tipInit();
+const vis=s=>{ s=String(s); return s===''?'(빈칸)':s.replace(/^[  　]+|[  　]+$/g,m=>'␣'.repeat(m.length)).replace(/​/g,'␣'); };
+const nameCol=h=>/거래처|공급처|업체|고객|회사|바이어|담당|이름|성명/.test(h);
+
+/* ===== [구역 B] 표 올리기 ===== */
+function setTable(t,name){ T=t; fname=(name||'표').replace(/\.[^.]+$/,''); types=U.detectTypes(t); cfg=U.pickDefaults(t,types); opts=Object.assign({},U.ALL_ON); ops=[]; gid=0; fl=null; vcol=Math.max(types.indexOf('text'),0); aiMask=new Set(); t.header.forEach((h,i)=>{ if(types[i]==='text'&&nameCol(h)) aiMask.add(i); }); $('#aians').value=''; 
+  $('#preview').hidden=false; U.previewTable($('#ptable'),t,types,()=>{cfg=U.pickDefaults(T,types);}); }
+U.attachLoader({drop:'#drop',file:'#file',sheet:'#sheet',msg:'#msg',paste:'#paste',onTable:setTable});
+$$('#samples button').forEach(b=>b.onclick=()=>{ const t=U.toTable(U.parseDelim(window.SNC_RAW[b.dataset.s])); $('#msg').textContent='연습용 자료를 불러왔어요 ('+t.rows.length+'줄)'; $('#msg').className='hint'; setTable(t,b.textContent); });
+
+/* ===== [구역 C] 고친 결과 만들기 (자동 규칙 → 내가 고친 기록 순서로 적용) ===== */
+function buildFinal(){
+  const cl=U.clean(T,types,opts); full=U.clean(T,types,U.ALL_ON);
+  const rows=cl.rows.map(r=>({dup:r.dup,del:false,cells:r.cells.map(c=>({v:c.v,raw:c.raw,kinds:c.kinds.slice()}))}));
+  const hit=(c,o)=>o.loose?c.v.trim()===o.from:c.v===o.from;
+  ops.forEach(o=>{
+    if(o.t==='cell'){ const c=rows[o.r].cells[o.c]; if(c.v!==o.v){ c.v=o.v; c.kinds.push('edit'); } }
+    else if(o.t==='map'){ rows.forEach(r=>{ const c=r.cells[o.c]; if(hit(c,o)){ c.v=o.to; c.kinds.push('edit'); } }); }
+    else if(o.t==='rep'){ rows.forEach(r=>r.cells.forEach((c,ci)=>{ if((o.c<0||o.c===ci)&&c.v.includes(o.from)){ c.v=c.v.split(o.from).join(o.to); c.kinds.push('edit'); } })); }
+    else if(o.t==='del'){ rows[o.r].dup=true; rows[o.r].del=true; }
+    else if(o.t==='delval'){ rows.forEach(r=>{ if(hit(r.cells[o.c],o)){ r.dup=true; r.del=true; } }); }
+  });
+  fl={header:T.header,types,rows,counts:cl.counts,kept:rows.filter(r=>!r.dup).length,total:rows.length};
+}
+function redetect(cols){ const tmp={header:T.header,rows:fl.rows.filter(r=>!r.dup).map(r=>r.cells.map(c=>c.v))}; const t2=U.detectTypes(tmp); const ch=[]; cols.forEach(c=>{ if(types[c]!==t2[c]){ ch.push(`「${T.header[c]}」 ${U.TYPE_LABEL[types[c]]}→${U.TYPE_LABEL[t2[c]]}`); types[c]=t2[c]; } }); if(ch.length){ cfg=U.pickDefaults(T,types); buildFinal(); } return ch; }
+function push(o){ o.g=o.g||++gid; ops.push(o); }
+function undo(){ if(!ops.length) return; const g=ops[ops.length-1].g; while(ops.length&&ops[ops.length-1].g===g) ops.pop(); }
+function opDesc(o){ const h=o.c>=0?T.header[o.c]:'모든 열'; return o.t==='cell'?`「${h}」 칸 직접 고침`:o.t==='map'?`「${h}」 '${o.from}' → '${o.to}'`:o.t==='rep'?`「${h}」 '${o.from}' → '${o.to}' 바꾸기`:o.t==='del'?'줄 하나 지움':`「${h}」 '${o.from}' 줄 지움`; }
+const entriesOf=c=>{ const m=new Map(); fl.rows.forEach(r=>{ if(r.dup) return; const v=r.cells[c].v; m.set(v,(m.get(v)||0)+1); }); const key=v=>v.normalize('NFKC').toLowerCase().replace(/\(주\)|㈜|주식회사|\(유\)|유한회사/g,'').replace(/[\s\-_.,·()]/g,''); return [...m].map(([v,n])=>({v,n,k:key(v)})).sort((a,b)=>a.k<b.k?-1:a.k>b.k?1:b.n-a.n); };
+
+/* ===== [구역 D] 자동으로 고치기 화면 ===== */
+const NOTE={trim:'앞뒤나 글자 사이에 보이지 않는 빈칸이 붙은 값은 다른 값으로 세어져요.',date:'날짜가 여러 모양(2026.07.08 / 2026-07-08 / 엑셀 숫자)으로 섞이면 월별로 못 묶어요.',num:'숫자 뒤에 붙은 "원"·"개"나 쉼표 때문에 합계에 못 들어가는 값이 있어요.',same:'띄어쓰기·대소문자만 다른 같은 값은 하나로 합쳐요.',dup:'완전히 똑같은 줄이 두 번 들어 있으면 합계가 부풀어요.'};
+function found(k){ const seen=new Set(),out=[];
+  if(k==='dup'){ full.rows.forEach(r=>{ if(r.dup&&out.length<2) out.push('<code>'+esc(r.cells.slice(0,3).map(c=>c.v).join(' · '))+'</code>'); }); return out.join(', '); }
+  full.rows.forEach(r=>r.cells.forEach(c=>{ if(c.kinds.includes(k)&&out.length<3&&!seen.has(c.raw)){ seen.add(c.raw); out.push(`<code>${esc(vis(c.raw))}</code> → <code>${esc(vis(c.v))}</code>`); } })); return out.join(', '); }
+function ruleHTML(k){ const n=full.counts[k]; return `<label class="rule"><input type="checkbox" data-k="${k}" ${opts[k]?'checked':''}><span class="sw"></span><span class="t">${U.RULES[k]}<span class="n">${NOTE[k]}${n?`<span class="found">이 파일에서 찾은 것 (${n}${k==='dup'?'줄':'곳'}): ${found(k)}</span>`:''}</span></span></label>`; }
+function renderAuto(){ buildFinal(); const ks=Object.keys(U.RULES), yes=ks.filter(k=>full.counts[k]>0), no=ks.filter(k=>!full.counts[k]);
+  $('#rules').innerHTML=(yes.length?yes.map(ruleHTML).join(''):'<div class="callout ok">이 표에서는 자동으로 찾을 지저분한 곳이 없었어요. 다음 단계에서 직접 확인해 보세요.</div>')+(no.length?`<details class="more"><summary>이 표엔 해당 없는 규칙 ${no.length}개 (눌러서 보기)</summary>${no.map(ruleHTML).join('')}</details>`:'');
+  $$('#rules input').forEach(x=>x.onchange=()=>{ opts[x.dataset.k]=x.checked; const o=document.querySelector('#rules details')?.open; renderAuto(); if(o) $('#rules details').open=true; showDiff(x.dataset.k); });
+  if(!$('#diffbox').dataset.k) $('#diffbox').innerHTML='<span class="cap">스위치를 바꾸면 합계가 어떻게 달라지는지 여기에 보여 드려요.</span>';
+  $('#ctable').innerHTML=`<div class="stats"><div><div class="big-num">${fl.kept}줄</div><div class="big-lab">남은 줄 (전체 ${fl.total}줄)</div></div></div><div style="margin-top:10px"></div>`+U.cleanedTableHTML(fl); }
+function showDiff(k){ const box=$('#diffbox'); box.dataset.k=k;
+  if(k==='date'){ const di=types.indexOf('date'); if(di<0){box.innerHTML='이 표엔 날짜 열이 없어요.';return;} const n=o=>new Set(U.clean(T,types,o).rows.filter(r=>!r.dup).map(r=>{const v=r.cells[di].v; return U.parseDate(v,true)?U.parseDate(v,true).slice(0,7):v;})).size; const o2=Object.assign({},opts,{date:!opts.date}); box.innerHTML=`<b>날짜 모양 맞추기</b> ${opts.date?'켰더니':'껐더니'}<br>월별로 묶으면 <b>${n(opts)}묶음</b>이 돼요 (${opts.date?'끄면':'켜면'} ${n(o2)}묶음).`; return; }
+  const ni=types.map((x,i)=>x==='num'?i:-1).filter(i=>i>=0); if(!ni.length){box.innerHTML='';return;}
+  const col=ni.find(i=>/금액|매출/.test(T.header[i]))??ni[ni.length-1]; const other=Object.assign({},opts,{[k]:!opts[k]}); const a=U.colSum(U.clean(T,types,opts),col), b=U.colSum(U.clean(T,types,other),col); const on=opts[k], d=a-b;
+  box.innerHTML=`<b>"${U.RULES[k]}"</b> ${on?'켰더니':'껐더니'}<br>「${esc(T.header[col])}」 합계가 <b>${fmt(a)}</b> ${d===0?'— 이 규칙은 합계를 바꾸지 않아요.':`(${on?'끌 때':'켤 때'} ${fmt(b)}, 차이 <b>${fmt(Math.abs(d))}</b>)`}`; }
+
+/* ===== [구역 E] 내 손으로 고치기 화면 ===== */
+function renderManual(){ buildFinal();
+  $('#opsinfo').textContent=ops.length?`고친 기록 ${new Set(ops.map(o=>o.g)).size}건 · 마지막: ${opDesc(ops[ops.length-1])}`:'아직 고친 곳이 없어요.';
+  $('#undo').disabled=!ops.length; $('#undoall').hidden=!ops.length;
+  renderETable(); renderVBox(); renderRBox(); }
+function renderETable(){ const LIM=150, rows=fl.rows.slice(0,LIM);
+  let h=`<div class="tablebox"><table><thead><tr><th></th>${T.header.map((x,i)=>`<th class="${types[i]==='num'?'r':''}">${esc(x)}</th>`).join('')}</tr><tr class="typerow"><th></th>${types.map((ty,i)=>`<th><select data-t="${i}" aria-label="${esc(T.header[i])} 열 종류">${['date','num','text'].map(k=>`<option value="${k}" ${ty===k?'selected':''}>${U.TYPE_LABEL[k]}</option>`).join('')}</select></th>`).join('')}</tr></thead><tbody>`;
+  rows.forEach((r,ri)=>{ h+=`<tr class="${r.dup?'dup':''}"><td>${r.dup?'':`<button class="x" data-del="${ri}" title="이 줄 지우기" aria-label="${ri+1}번째 줄 지우기">✕</button>`}</td>`+r.cells.map((c,ci)=>{ const chg=c.kinds.length&&!r.dup; return `<td class="${types[ci]==='num'?'r':''} ${chg?'chg':''}" ${r.dup?'':'contenteditable="true" spellcheck="false"'} data-r="${ri}" data-c="${ci}" data-v="${esc(c.v)}" ${chg?`data-from="${esc(c.raw)}"`:''}>${esc(c.v)}</td>`; }).join('')+'</tr>'; });
+  $('#etable').innerHTML=h+'</tbody></table></div>'+(fl.rows.length>LIM?`<p class="cap">처음 ${LIM}줄만 보여 드려요. 나머지 줄도 아래 ②·③의 합치기·바꾸기는 똑같이 적용돼요.</p>`:''); }
+$('#etable').addEventListener('focusout',e=>{ const td=e.target.closest&&e.target.closest('td[data-c]'); if(!td) return; const v=td.textContent.trim(); if(v!==td.dataset.v){ push({t:'cell',r:+td.dataset.r,c:+td.dataset.c,v}); renderManual(); } });
+$('#etable').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.matches&&e.target.matches('td[contenteditable]')){ e.preventDefault(); e.target.blur(); } });
+$('#etable').addEventListener('click',e=>{ const b=e.target.closest('[data-del]'); if(b){ push({t:'del',r:+b.dataset.del}); renderManual(); } });
+$('#etable').addEventListener('change',e=>{ const s=e.target.closest('[data-t]'); if(s){ types[+s.dataset.t]=s.value; cfg=U.pickDefaults(T,types); renderManual(); } });
+$('#undo').onclick=()=>{ undo(); renderManual(); };
+$('#undoall').onclick=()=>{ ops=[]; renderManual(); };
+function renderVBox(){ ventries=entriesOf(vcol).slice(0,300); vtouched=false;
+  const groups=[]; ventries.forEach((e,i)=>{ const g=groups[groups.length-1]; if(g&&g.k===e.k) g.items.push(i); else groups.push({k:e.k,items:[i]}); });
+  const nsim=groups.filter(g=>g.items.length>1).length;
+  let h=`<label class="fld" style="max-width:320px"><span>어느 열의 값을 볼까요?</span><select id="vcol">${T.header.map((x,i)=>`<option value="${i}" ${i===vcol?'selected':''}>${esc(x)}</option>`).join('')}</select></label>`;
+  h+=`<p class="cap">${ventries.length}가지 값 · ${nsim?`<b>주황 막대</b>로 표시된 ${nsim}묶음은 띄어쓰기·(주) 등만 달라서 같은 값일 가능성이 커요.`:'비슷해 보이는 값 묶음은 없어요. 뜻이 같은 값은 직접 골라 합치세요.'}</p><div class="vscroll">`;
+  groups.forEach((g,gi)=>{ h+=`<div class="vgrp ${g.items.length>1?'sim':''}">`+g.items.map(i=>`<label class="vrow"><input type="checkbox" data-i="${i}"><span class="vv">${esc(vis(ventries[i].v))}</span><span class="cap">${ventries[i].n}개</span></label>`).join('')+(g.items.length>1?`<button class="lnk" data-merge="${gi}" style="padding:2px 0">이 묶음을 가장 많은 값으로 합치기</button>`:'')+'</div>'; });
+  h+=`</div><div class="row" style="margin-top:12px"><span>고른 값을</span><input type="text" id="vto" style="width:240px" placeholder="합칠 이름" aria-label="합칠 이름"><span>(으)로</span><button class="btn2" id="vgo" disabled>하나로 합치기</button></div>`;
+  const box=$('#vbox'); box.innerHTML=h; box._groups=groups;
+  $('#vcol').onchange=e=>{ vcol=+e.target.value; renderVBox(); };
+  $('#vto').oninput=()=>{ vtouched=true; upd(); };
+  $$('#vbox .vrow input').forEach(x=>x.onchange=()=>{ const ch=picked(); if(!vtouched&&ch.length){ $('#vto').value=ch.slice().sort((a,b)=>b.n-a.n)[0].v; } upd(); });
+  $('#vgo').onclick=()=>merge(picked().map(e=>e.v),$('#vto').value.trim());
+  $$('#vbox [data-merge]').forEach(b=>b.onclick=()=>{ const items=box._groups[+b.dataset.merge].items.map(i=>ventries[i]); const to=items.slice().sort((a,b)=>b.n-a.n)[0].v; merge(items.map(e=>e.v),to); });
+  function picked(){ return $$('#vbox .vrow input:checked').map(x=>ventries[+x.dataset.i]); }
+  function upd(){ $('#vgo').disabled=picked().length<1||$('#vto').value.trim()===''&&false; }
+  upd(); }
+function merge(froms,to){ const g=++gid; let n=0; froms.forEach(v=>{ if(v!==to){ push({t:'map',c:vcol,from:v,to,g}); n++; } }); if(n){ renderManual(); } }
+function renderRBox(){ $('#rbox').innerHTML=`<div class="flds"><label class="fld"><span>어느 열에서?</span><select id="rcol"><option value="-1">모든 열</option>${T.header.map((x,i)=>`<option value="${i}">${esc(x)}</option>`).join('')}</select></label><label class="fld"><span>찾을 글자</span><input type="text" id="rfind" placeholder="예: (주)"></label><label class="fld"><span>바꿀 글자 (지우려면 비워 두기)</span><input type="text" id="rto"></label></div><p class="cap" id="rcount">찾을 글자를 적어 보세요.</p><button class="btn2" id="rgo" disabled>바꾸기</button>`;
+  const cnt=()=>{ const f=$('#rfind').value, c=+$('#rcol').value; let n=0; if(f) fl.rows.forEach(r=>{ if(!r.dup) r.cells.forEach((x,ci)=>{ if((c<0||c===ci)&&x.v.includes(f)) n++; }); }); $('#rcount').textContent=f?`${n}곳에서 찾았어요.`:'찾을 글자를 적어 보세요.'; $('#rgo').disabled=!n; };
+  ['rfind','rcol'].forEach(id=>$('#'+id).oninput=$('#'+id).onchange=cnt);
+  $('#rgo').onclick=()=>{ push({t:'rep',c:+$('#rcol').value,from:$('#rfind').value,to:$('#rto').value}); renderManual(); }; }
+
+/* ===== [구역 F] AI로 고치기 화면 ===== */
+function renderAI(){ buildFinal();
+  const tc=T.header.map((h,i)=>types[i]==='text'?i:-1).filter(i=>i>=0);
+  $('#aimask').innerHTML=tc.length?tc.map(i=>`<label><input type="checkbox" data-i="${i}" ${aiMask.has(i)?'checked':''}><span>${esc(T.header[i])} 가리기</span></label>`).join(''):'<span class="cap">글자 열이 없어요</span>';
+  $$('#aimask input').forEach(x=>x.onchange=()=>{ x.checked?aiMask.add(+x.dataset.i):aiMask.delete(+x.dataset.i); buildAIPrompt(); parseAI(); });
+  $('#aigoal').oninput=buildAIPrompt; buildAIPrompt(); parseAI(); $('#aiundo').disabled=!ops.length; }
+function buildAIPrompt(){ const g={}; aiMask.forEach(i=>g[T.header[i]]=entriesOf(i).map(e=>e.v)); aiMap=U.makeAliases(g);
+  const mv=(i,v)=>aiMask.has(i)&&aiMap[v]?aiMap[v]:v; let body='';
+  T.header.forEach((h,i)=>{ const es=entriesOf(i);
+    if(types[i]==='text'){ const show=es.slice(0,50); body+=`■ 「${h}」 (글자, 서로 다른 값 ${es.length}가지)\n  `+show.map(e=>`"${mv(i,e.v)}"(${e.n})`).join(', ')+(es.length>50?` … 외 ${es.length-50}가지`:'')+'\n\n'; }
+    else { const bad=es.filter(e=>e.v!==''&&(types[i]==='num'?isNaN(U.parseNum(e.v)):!U.parseDate(e.v,true))); const blank=es.find(e=>e.v==='');
+      body+=`■ 「${h}」 (${U.TYPE_LABEL[types[i]]}) — ${bad.length||blank?'이상한 값만 적었어요':'이상한 값 없음'}\n`+(bad.length?'  '+bad.slice(0,30).map(e=>`"${e.v}"(${e.n})`).join(', ')+'\n':'')+(blank?`  빈칸 ${blank.n}개\n`:'')+'\n'; } });
+  const goal=$('#aigoal').value.trim();
+  $('#aiprompt').value=`당신은 엑셀 표의 입력 실수와 표기 흔들림을 찾아 주는 꼼꼼한 도우미입니다.\n아래는 표의 열 이름과, 열마다 나온 값 목록입니다. 값 뒤 괄호의 숫자는 나온 횟수입니다. (총 ${fl.kept}줄)\n\n[고치고 싶은 점]\n${goal||'(따로 없음 — 같은 뜻인데 다르게 쓴 값, 오타, 단위·글자가 섞인 숫자, 날짜 형식 문제를 찾아 주세요)'}\n\n[열별 값]\n${body}[답하는 방법]\n- "바꾸기 목록"만 아래 형식의 표(세로선 | 로 나눔)로 답하고, 설명은 표 아래에 한두 줄만 쓰세요.\n  열 이름 | 원래 값 | 바꿀 값\n- 원래 값은 위 목록에 있는 값을 그대로 적으세요.\n- 줄 전체를 지워야 하면 바꿀 값에 (줄삭제)라고 적으세요.\n- 위 목록에 없는 값은 만들지 말고, 확실하지 않으면 바꾸지 마세요.\n- 숫자 열의 바꿀 값은 숫자만(쉼표·단위 없이), 날짜 열은 2026-07-08 모양으로 적으세요.`; }
+$('#aicp').onclick=()=>U.copy($('#aiprompt').value,$('#aifl'));
+const unq=s=>s.trim().replace(/^["'“”「」‘’]+|["'“”「」‘’]+$/g,'').trim();
+function parseAI(){ const raw=$('#aians').value; aiItems=[]; if(!raw.trim()){ $('#aiprev').innerHTML=''; $('#aiapply').disabled=true; return; }
+  const txt=U.restoreAlias(raw,aiMap); const norm=s=>s.replace(/[「」"'\s]/g,'');
+  txt.split(/\r?\n/).forEach(line=>{ line=line.trim(); if(!line||/^[\s|:\-]+$/.test(line)||(!line.includes('|')&&!line.includes('\t'))) return;
+    const p=line.replace(/^\||\|$/g,'').split(/\||\t/).map(s=>s.trim()); if(p.length<3) return; if(/원래/.test(p[1])&&/바꿀|새/.test(p[2])) return;
+    const c=T.header.findIndex(h=>norm(h)===norm(p[0])); let from=unq(p[1]), to=unq(p[2]); if(from==='(빈칸)') from=''; const del=/^\(?줄\s*삭제\)?$/.test(to); if(to==='(빈칸)') to='';
+    let n=0; if(c>=0) fl.rows.forEach(r=>{ if(!r.dup&&r.cells[c].v.trim()===from) n++; });
+    const status=c<0?'열 이름을 못 찾았어요':from===to&&!del?'바뀌는 게 없어요':n===0?'해당하는 값이 없어요':''; aiItems.push({c,col:p[0],from,to,del,n,ok:!status,status}); });
+  const ok=aiItems.filter(x=>x.ok);
+  $('#aiprev').innerHTML=aiItems.length?`<h3>미리 보기 <span class="cap">(${ok.length}개 적용 가능 · 합계 ${ok.reduce((a,x)=>a+x.n,0)}곳)</span></h3><div class="tablebox"><table><thead><tr><th>열</th><th>원래 값</th><th>바꿀 값</th><th class="r">해당</th><th></th></tr></thead><tbody>${aiItems.map(x=>`<tr style="${x.ok?'':'opacity:.5'}"><td>${esc(x.col)}</td><td><span class="vv">${esc(vis(x.from))}</span></td><td>${x.del?'<b>(줄 지우기)</b>':`<span class="vv">${esc(vis(x.to))}</span>`}</td><td class="r">${x.n}곳</td><td>${x.ok?'':`<span class="warn" style="font-size:15px">${x.status}</span>`}</td></tr>`).join('')}</tbody></table></div>`:'<div class="callout bad">바꾸기 목록 줄(열 이름 | 원래 값 | 바꿀 값)을 못 찾았어요. AI에게 "표 형식으로만 다시 답해 줘"라고 말해 보세요.</div>';
+  $('#aiapply').disabled=!ok.length; }
+$('#aians').oninput=parseAI;
+$('#aiapply').onclick=()=>{ const ok=aiItems.filter(x=>x.ok); if(!ok.length) return; const g=++gid; const cols=new Set(); ok.forEach(x=>{ push(x.del?{t:'delval',c:x.c,from:x.from,loose:true,g}:{t:'map',c:x.c,from:x.from,to:x.to,loose:true,g}); cols.add(x.c); });
+  buildFinal(); const ch=redetect([...cols]); const n=ok.reduce((a,x)=>a+x.n,0); $('#aians').value=''; renderAI(); $('#aimsg').textContent=`${ok.length}개를 적용했어요 (${n}곳)${ch.length?' · 열 종류가 바뀌었어요: '+ch.join(', '):''}`; $('#aiundo').disabled=false; };
+$('#aiundo').onclick=()=>{ undo(); renderAI(); $('#aimsg').textContent='되돌렸어요'; };
+
+/* ===== [구역 G] 합계 내기 ===== */
+function renderAgg(){ buildFinal(); const ct=U.cleanTable(fl);
+  U.aggControls($('#actl'),ct,types,cfg,draw); draw();
+  function draw(){ const a=U.aggregate(ct,types,cfg); $('#aout').innerHTML=`<div class="stats"><div><div class="big-num">${fmt(a.grand)}</div><div class="big-lab">${a.method==='avg'?'전체 평균':'전체'} ${U.METHOD[a.method]}</div></div><div><div class="big-num">${a.keys.length}</div><div class="big-lab">묶음 개수</div></div></div><div class="tablebox">${U.aggTable(a,ct.header[cfg.key],ct.header[cfg.val])}</div>`;
+    $('#achart').innerHTML=U.chart(a,kind); window._a=a; }
+  $$('#kind input').forEach(r=>r.onchange=()=>{kind=r.value;draw();}); }
+
+/* ===== [구역 H] 저장 ===== */
+$('#dl1').onclick=()=>{ buildFinal(); const t=U.cleanTable(fl); U.download(fname+'_정리됨.csv',U.toCSV([t.header].concat(t.rows))); };
+$('#dl2').onclick=()=>{ renderAgg(); U.download(fname+'_합계.csv',U.toCSV(U.aggRows(window._a,T.header[cfg.key]))); };
+$('#cp2').onclick=()=>{ renderAgg(); U.copy(U.aggRows(window._a,T.header[cfg.key]).map(r=>r.join('\t')).join('\n'),$('#fl')); };
+
+/* ===== [기능 추가 자리] 수업에서 AI로 만든 새 기능은 이 아래에 붙여요 ===== */
+})();
+</script>

@@ -1,0 +1,776 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'none'; form-action 'none'">
+<title>엑셀 마스킹</title>
+<style>
+:root{
+  --bg:#eef1f5; --pane:#ffffff; --ink:#14202e; --sub:#5b6878; --line:#cfd6e0; --accent:#d9481f; --accent-ink:#fff;
+  --mark:#ffd9c9; --mark-ink:#8a2a0c; --back:#cfeedd; --back-ink:#0d4d2c; --warn:#b3261e; --ok:#157347;
+  --sans:"Pretendard","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono","D2Coding",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#0d141d;--pane:#131c28;--ink:#e6ecf3;--sub:#9aa8b9;--line:#2a3646;--accent:#ff8a5c;--accent-ink:#1c0d06;--mark:#5a2a18;--mark-ink:#ffd0bd;--back:#16452d;--back-ink:#c9f2dc;--warn:#ff9a92;--ok:#6fd49c}
+}
+:root[data-theme="dark"]{--bg:#0d141d;--pane:#131c28;--ink:#e6ecf3;--sub:#9aa8b9;--line:#2a3646;--accent:#ff8a5c;--accent-ink:#1c0d06;--mark:#5a2a18;--mark-ink:#ffd0bd;--back:#16452d;--back-ink:#c9f2dc;--warn:#ff9a92;--ok:#6fd49c}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:18px/1.7 var(--sans);-webkit-font-smoothing:antialiased}
+.app{min-height:100vh}
+.top{display:flex;align-items:stretch;justify-content:space-between;background:var(--ink);color:var(--bg);padding:0 24px;gap:16px;flex-wrap:wrap}
+.brand{font-weight:800;font-size:22px;letter-spacing:-.02em;padding:14px 0;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.brand small{font-weight:400;font-size:15px;opacity:.75}
+.tools{display:flex;align-items:center;gap:22px}
+.guidebtn{all:unset;cursor:pointer;font-weight:800;font-size:16px;border:1.5px solid currentColor;border-radius:2px;padding:6px 16px;align-self:center;transition:background .15s,color .15s}
+.guidebtn:hover{background:var(--bg);color:var(--ink)}.guidebtn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.tabs{display:flex}
+.tabs button{all:unset;cursor:pointer;padding:0 26px;display:flex;align-items:center;font-weight:700;font-size:18px;opacity:.65;border-bottom:4px solid transparent;transition:opacity .15s,border-color .15s}
+.tabs button small{font-weight:400;font-size:14px;margin-left:6px}
+.tabs button:hover{opacity:1}
+@media(max-width:700px){.tabs button small{display:none}}
+.tabs button[aria-selected=true]{opacity:1;border-color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+.theme{all:unset;cursor:pointer;box-sizing:border-box;width:42px;height:42px;display:grid;place-items:center;font-size:22px;border:2px solid currentColor;opacity:.8;align-self:center}
+.theme:hover,.theme:focus-visible{opacity:1}
+.theme:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pane-title{font:800 15px var(--sans);letter-spacing:.14em;color:var(--sub);margin:0 0 6px}
+.item{display:grid;grid-template-columns:30px 1fr;gap:2px 12px;padding:13px 0;border-bottom:1px solid var(--line);align-items:center}
+.item:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.item label{cursor:pointer;font-weight:700;line-height:1.35}
+.item small{display:block;color:var(--sub);font-weight:400;font-size:15px;font-family:var(--mono)}
+.item .f{grid-column:2}
+.item .tip{grid-column:2;font-size:15px;line-height:1.55;color:var(--sub);margin:6px 0 0}
+.item .pv{grid-column:2;font-size:15px;line-height:1.6;margin:6px 0 0;padding:8px 10px;border-left:3px solid var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent);font-family:var(--mono);word-break:break-all}
+.item .pv:empty{display:none}
+.how{margin:2px 0 10px;border:1px solid var(--line)}
+.how summary{cursor:pointer;padding:10px 12px;font-weight:700}
+.how summary:hover{background:color-mix(in srgb,var(--accent) 8%,transparent)}
+.how div{padding:2px 14px 12px;font-size:16px;line-height:1.65}
+.how h3{font-size:16px;margin:12px 0 2px}
+.how code{font-family:var(--mono);background:color-mix(in srgb,var(--accent) 10%,transparent);padding:0 4px}
+.sw{appearance:none;-webkit-appearance:none;width:30px;height:18px;border:2px solid var(--ink);border-radius:2px;position:relative;cursor:pointer;background:transparent;transition:background .15s;margin:0}
+.sw::after{content:"";position:absolute;top:1px;left:1px;width:10px;height:10px;background:var(--ink);transition:transform .15s,background .15s}
+.sw:checked{background:var(--accent);border-color:var(--accent)}
+.sw:checked::after{transform:translateX(12px);background:var(--accent-ink)}
+.sw:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+input[type=text],select{font:16px var(--sans);color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);padding:6px 0;width:100%;border-radius:0}
+input[type=text]:focus,select:focus{outline:none;border-bottom-color:var(--accent);box-shadow:0 1px 0 var(--accent)}
+select option{color:#000}
+.seg{display:flex;border:1px solid var(--ink);border-radius:2px;margin-top:10px}
+.seg button{all:unset;flex:1;text-align:center;padding:9px 4px;cursor:pointer;font-size:16px;font-weight:700;transition:background .12s}
+.seg button+button{border-left:1px solid var(--ink)}
+.seg button:hover{background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.seg button[aria-pressed=true]{background:var(--ink);color:var(--bg)}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.hint{color:var(--sub);font-size:15px;margin:8px 0 0;line-height:1.6}
+.bar{display:flex;gap:20px 28px;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;margin-bottom:18px}
+.kpi{display:flex;gap:34px}
+.kpi div{line-height:1.15}
+.kpi b{display:block;font:800 44px var(--sans);letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.kpi span{font-size:15px;color:var(--sub)}
+.acts{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.btn{font:800 18px var(--sans);padding:13px 24px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:2px;cursor:pointer;transition:transform .12s,filter .12s}
+.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+.btn:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;filter:none}
+.lnk{all:unset;cursor:pointer;font-weight:700;text-decoration:underline;text-underline-offset:5px;color:var(--sub);font-size:16px}
+.lnk:hover{color:var(--ink)}.lnk:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.msg{font-size:16px;margin:0 0 8px;line-height:1.6}
+.where{font-weight:400;color:var(--sub);font-size:15px}.msg.warn{color:var(--warn)}.msg.ok{color:var(--ok)}.msg.sub{color:var(--sub)}
+.msg code{font-family:var(--mono);background:var(--mark);color:var(--mark-ink);padding:0 5px;border-radius:2px}
+.tw{overflow:auto;background:var(--pane);border-top:2px solid var(--ink);border-bottom:1px solid var(--line);max-height:62vh}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:17px}
+th,td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap}
+thead th{vertical-align:bottom;font-weight:800;position:sticky;top:0;background:var(--pane);padding-top:14px;z-index:1}
+thead th small{display:block;font-weight:400;font-size:13px;color:var(--sub);margin-bottom:2px}
+thead select{font-size:15px;font-weight:700;min-width:130px}
+tbody tr:hover td{background:color-mix(in srgb,var(--accent) 5%,transparent)}
+td mark{background:var(--mark);color:var(--mark-ink);padding:0 5px;border-radius:2px;font-weight:700}
+td.del,th.del{color:var(--sub);text-decoration:line-through}
+td.memo{white-space:normal;min-width:260px}
+.sheets{display:flex;flex-wrap:wrap;gap:6px 22px;margin:0 0 14px;align-items:center}
+.sheets .one{display:flex;gap:10px;align-items:center}
+.sheets .one button{all:unset;cursor:pointer;font-weight:700;font-size:16px;border-bottom:2px solid transparent;padding:2px 0}
+.sheets .one button[aria-current=true]{border-color:var(--accent)}
+.sheets .one button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+textarea{width:100%;min-height:150px;font:17px/1.7 var(--sans);color:var(--ink);background:var(--pane);border:1px solid var(--line);border-radius:2px;padding:12px 14px;resize:vertical}
+textarea:focus{outline:none;border-color:var(--accent)}
+.pane-title{margin:30px 0 8px}
+.txt{white-space:pre-wrap;background:var(--pane);border:1px solid var(--line);padding:12px 14px;min-height:80px;word-break:break-word;font-size:17px}
+.txt mark{background:var(--mark);color:var(--mark-ink);padding:0 4px;border-radius:2px;font-weight:700}
+.txt.back mark{background:var(--back);color:var(--back-ink)}
+.wrap{max-width:1100px;margin:0 auto;padding:32px 24px 120px}
+.steps{display:flex;background:var(--pane);border-bottom:2px solid var(--ink)}
+.steps button{all:unset;box-sizing:border-box;flex:1;cursor:pointer;display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:5px solid transparent;margin-bottom:-2px;opacity:.5;transition:opacity .15s,background .15s}
+.steps button:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.steps button:focus-visible{outline:2px solid var(--accent);outline-offset:-4px}
+.steps button.done,.steps button[aria-current=step]{opacity:1}
+.steps button[aria-current=step]{border-bottom-color:var(--accent)}
+.steps button[aria-disabled=true]{cursor:not-allowed}.steps button[aria-disabled=true]:hover{background:none}
+.steps i{font:800 34px var(--sans);font-style:normal;line-height:1}
+.steps [aria-current=step] i{color:var(--accent)}
+.steps b{font-size:20px;word-break:keep-all}.steps em{font-style:normal;color:var(--ok);font-weight:800}
+.step{display:none}.step.on{display:block;animation:fade .25s ease both}
+.step h1{font-size:34px;line-height:1.3;letter-spacing:-.02em;margin:0 0 8px}
+.lead{color:var(--sub);margin:0 0 22px}
+.drop{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;background:var(--pane);border:3px dashed var(--ink);border-radius:2px;padding:64px 24px;color:var(--ink);font:inherit;cursor:pointer;transition:background .15s,border-color .15s}
+.drop .ic{font-size:60px;line-height:1;color:var(--accent)}
+.drop b{font-size:28px;letter-spacing:-.02em}
+.drop small{font-size:16px;color:var(--sub);font-weight:600}
+.drop:hover,.drop.over,body.dragging .drop{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--pane))}
+.drop:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+#fileNow{margin-top:14px;font-weight:700}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:16px 24px;margin-top:28px;flex-wrap:wrap}
+.btn.big{padding:16px 36px;font-size:20px}
+.btn2,.btn.done{font:800 18px var(--sans);padding:11px 24px;background:none;color:var(--ink);border:2px solid var(--ink);border-radius:2px;cursor:pointer;transition:transform .12s,filter .12s}
+.btn2:hover,.btn.done:hover{transform:translateY(-1px)}
+.btn2:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.btn2.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.saves{text-align:right}.saves .hint{margin:0 0 6px}.saves .acts{justify-content:flex-end}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:0 40px;margin-top:6px}
+.cats .item{border-bottom:0;border-top:1px solid var(--line)}
+.cats .item.wide{grid-column:1/-1;border-bottom:1px solid var(--line)}
+.fmt{margin-top:26px;max-width:480px}
+#warns .msg.warn{background:color-mix(in srgb,var(--warn) 9%,transparent);border:1px solid var(--warn);padding:10px 14px}
+#txIn textarea{min-height:240px}
+.modal{position:fixed;inset:0;background:color-mix(in srgb,#0a1018 62%,transparent);display:flex;align-items:center;justify-content:center;z-index:30;padding:20px}
+.gbox{position:relative;background:var(--pane);width:min(860px,100%);max-height:92vh;overflow:auto;border-top:6px solid var(--accent);padding:30px 40px 0}
+.gbox h2{font-size:30px;letter-spacing:-.02em;margin:0 0 6px}.gbox h3{font-size:20px;margin:26px 0 6px}
+.gx{all:unset;cursor:pointer;position:absolute;right:20px;top:14px;font-size:34px;line-height:1;padding:4px 10px}
+.gx:hover{color:var(--accent)}.gx:focus-visible{outline:2px solid var(--accent)}
+.gs{display:grid;grid-template-columns:48px 1fr;gap:2px 16px;padding:14px 0;border-top:1px solid var(--line)}
+.gs i{font:800 34px var(--sans);font-style:normal;line-height:1;color:var(--accent);grid-row:span 2}
+.gs b{font-size:20px}.gs span{color:var(--sub);font-size:17px;line-height:1.6}
+.gtab{min-width:0;font-size:16px}.gtab th,.gtab td{white-space:normal;vertical-align:top;padding:8px 10px}
+.gtab code,.gbox .lead code{font-family:var(--mono);background:color-mix(in srgb,var(--accent) 10%,transparent);padding:0 4px}
+.gfoot{position:sticky;bottom:0;background:var(--pane);border-top:1px solid var(--line);margin:22px -40px 0;padding:14px 40px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
+.gfoot label{font-size:16px;color:var(--sub);cursor:pointer}
+.view{display:none}.view.on{display:block;animation:fade .25s ease both}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.prog{position:fixed;inset:0;background:color-mix(in srgb,var(--bg) 78%,transparent);display:flex;align-items:center;justify-content:center;z-index:20;padding:16px}
+.prog-box{background:var(--pane);border:1px solid var(--line);border-top:4px solid var(--accent);width:min(440px,100%);padding:24px 24px 20px}
+.prog-head{display:flex;align-items:center;gap:14px}
+.prog-spin{width:26px;height:26px;border:4px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;flex:none}
+.prog-title{font-weight:800;font-size:19px;line-height:1.4}
+.prog-bar{height:14px;background:var(--line);margin:18px 0 10px;overflow:hidden;position:relative}
+.prog-fill{height:100%;width:0;background:var(--accent);transition:width .2s}
+.prog-bar.ind .prog-fill{width:35%;position:absolute;left:0;animation:slide 1.2s ease-in-out infinite;transition:none}
+.prog-num{display:flex;justify-content:space-between;gap:12px;font-size:16px;color:var(--sub);font-variant-numeric:tabular-nums}
+.prog-num b{color:var(--ink);font-size:20px}
+.prog-note{font-size:15px;color:var(--sub);margin:10px 0 0;line-height:1.55}
+.prog .acts{margin-top:16px;justify-content:flex-end}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+@media (prefers-reduced-motion:reduce){.prog-spin,.prog-bar.ind .prog-fill{animation:none}.prog-bar.ind .prog-fill{transform:none;width:100%;opacity:.5}}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,16px);background:var(--ink);color:var(--bg);padding:12px 22px;border-radius:2px;opacity:0;pointer-events:none;transition:.25s;font-size:16px;z-index:9;max-width:92vw;text-align:center}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.rm{font-family:var(--mono);font-size:15px}
+/* 한 화면 두 칸: 왼쪽 설정 + 오른쪽 결과 */
+.wrap.wide{max-width:1480px}
+.work{display:grid;grid-template-columns:360px minmax(0,1fr);gap:0 32px;align-items:start}
+.work.closed{grid-template-columns:minmax(0,1fr)}
+.work.closed .side{display:none}
+.side{position:sticky;top:12px;max-height:calc(100vh - 24px);overflow:auto;background:var(--pane);border:1px solid var(--line);border-top:2px solid var(--ink);padding:16px 20px 18px}
+.side-h{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.side-h h2{font-size:22px;margin:0;letter-spacing:-.02em}
+.side .cats{grid-template-columns:1fr;gap:0;margin-top:8px}
+.side .item small{word-break:break-all}
+.side .fmt{margin-top:20px;max-width:none}
+.side .pane-title{margin:0 0 4px}
+.side-f{margin-top:16px}
+.sheet-ok,.scrim{display:none}
+.rhead h1{font-size:26px;line-height:1.3;letter-spacing:-.02em;margin:8px 0 12px}
+.rhead .kpi b{font-size:34px}
+.rtop{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.work:not(.closed) #sideOpen{display:none}
+.savebar{position:sticky;bottom:0;z-index:5;background:var(--pane);border-top:2px solid var(--ink);padding:12px 16px;margin-top:16px;display:flex;justify-content:space-between;align-items:center;gap:10px 24px;flex-wrap:wrap}
+.savebar .msg,.savebar .hint{margin:0}
+.savebar .acts{width:auto}
+.toast{bottom:96px}
+.hb{all:unset;cursor:pointer;display:block;min-width:120px}
+.hb .hn{display:block;font-weight:800;font-size:17px}
+.hb .hs{display:block;font-weight:600;font-size:15px;color:var(--sub)}
+.hb .hs::after{content:" ▾"}
+.hb:hover .hn{text-decoration:underline;text-underline-offset:4px}
+.hb:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+th.chg .hs{color:var(--accent)}
+th.chg .hn::before{content:"";display:inline-block;width:9px;height:9px;background:var(--accent);border-radius:50%;margin-right:7px}
+.menu{position:fixed;z-index:25;background:var(--pane);border:2px solid var(--ink);min-width:270px;max-width:92vw;padding:6px 0}
+.menu h4{margin:0;padding:8px 16px 6px;font-size:15px;color:var(--sub)}
+.menu button{all:unset;display:block;box-sizing:border-box;width:100%;padding:11px 16px;cursor:pointer;font-size:17px;font-weight:700}
+.menu button:hover,.menu button:focus-visible{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.menu button[aria-checked=true]::before{content:"✔ ";color:var(--accent)}
+.menu button small{font-weight:400;color:var(--sub);font-size:15px}
+.menu button small.ex{display:block;font-size:14px;margin-top:2px}
+@media (max-width:900px){
+  .work{display:block}
+  .side{position:fixed;left:0;right:0;bottom:0;top:auto;max-height:72vh;z-index:22;border:0;border-top:4px solid var(--accent);transform:translateY(105%);visibility:hidden;transition:transform .25s,visibility .25s;padding:16px 18px 20px}
+  .work.closed .side{display:block}
+  .work.sheet .side{transform:none;visibility:visible}
+  .work.sheet .scrim{display:block;position:fixed;inset:0;background:color-mix(in srgb,#0a1018 55%,transparent);z-index:21}
+  .sheet-ok{display:block;margin-top:18px;position:sticky;bottom:0;width:100%}
+  #sideClose{display:none}
+  .work:not(.closed) #sideOpen{display:inline-block}
+  .savebar .acts{display:flex;flex-direction:column;align-items:stretch;gap:8px;width:100%}
+  #askKind button{font-size:14px;padding:9px 2px}
+  .savebar .acts .lnk{text-align:center}
+  .savebar .btn,.savebar .btn2{width:100%;padding:12px 6px;font-size:16px}
+  .rhead .kpi b{font-size:28px}
+}
+@media (max-width:900px){
+  .brand small{display:none}
+  .wrap{padding:24px 16px 100px}
+  .steps button{padding:10px 12px;gap:8px}.steps i{font-size:28px}.steps b{font-size:16px}
+  .steps button:not([aria-current=step]) b{display:none}
+  .step h1{font-size:28px}
+  .drop{padding:44px 16px}.drop b{font-size:22px}
+  .gbox{padding:24px 20px 0}.gfoot{margin:0 -20px;padding:14px 20px}
+  .foot .btn{width:100%}
+  .top{padding:0 16px}
+  .tabs button{padding:0 16px}
+  .kpi b{font-size:34px}.kpi{gap:24px}
+  .btn{width:100%}
+  .acts{width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brand">엑셀 마스킹 <small>AI에 올리기 전, 이름과 번호를 먼저 가려요</small></div>
+    <div class="tools"><button class="guidebtn" id="guideOpen" type="button">사용법</button><button class="theme" id="theme" type="button" aria-label="밝게/어둡게 바꾸기" title="밝게/어둡게 바꾸기">◐</button></div>
+  </div>
+
+  <main class="stage">
+    <div class="view on" id="v-mask">
+      <nav class="steps" id="steps" aria-label="진행 단계">
+        <button type="button" data-step="1"><i>1</i><b id="sl1">파일 올리기</b><em hidden>✔</em></button>
+        <button type="button" data-step="2"><i>2</i><b>고르고 · 확인하고 · 저장</b><em hidden>✔</em></button>
+      </nav>
+      <div class="wrap">
+        <section class="step" id="p1">
+          <h1 id="t1">먼저 엑셀 파일을 올려 주세요</h1>
+          <p class="lead" id="l1">파일은 이 컴퓨터 밖으로 나가지 않아요. 가린 결과만 저장돼요.</p>
+          <div id="xlIn">
+            <button class="drop" id="drop" type="button"><span class="ic" aria-hidden="true">⬆</span><b>엑셀 파일을 여기에 놓으세요</b><small>또는 누르고 고르기 (.xlsx)</small></button>
+            <input type="file" id="file" accept=".xlsx,.xls,.csv,.json" hidden>
+            <p class="msg ok" id="fileNow" hidden></p>
+          </div>
+          <div id="txIn" hidden>
+            <textarea id="src" spellcheck="false" aria-label="가릴 글" placeholder="AI에게 보낼 글을 여기에 붙여 넣으세요"></textarea>
+          </div>
+          <div class="foot">
+            <div class="acts"><button class="lnk" id="sample" type="button">예시 파일로 해 보기</button><button class="lnk" id="tsample" type="button" hidden>예시 글 넣기</button><button class="lnk" id="toRestore1" type="button">AI 답을 진짜 이름으로 되돌리고 싶어요</button><button class="lnk" id="modeSwitch" type="button">엑셀이 아니라 글을 가리고 싶어요</button></div>
+            <button class="btn big" id="n1" type="button" disabled>다음 →</button>
+          </div>
+        </section>
+
+        <section class="step" id="p2">
+          <div class="work" id="work">
+            <div class="scrim" id="scrim"></div>
+            <aside class="side" id="side" aria-label="가릴 것 설정">
+              <div class="side-h"><h2>가릴 것</h2><button class="lnk" id="sideClose" type="button">접기 ◀</button></div>
+              <p class="hint" id="l2"></p>
+              <div class="cats" id="cats"></div>
+              <div class="fmt">
+                <h3 class="pane-title">별명 모양</h3>
+                <div class="seg" id="fmt" role="group" aria-label="별명 모양">
+                  <button aria-pressed="true" data-f="plain" type="button">A사 · 담당자1</button><button aria-pressed="false" data-f="br" type="button">[회사A]</button>
+                </div>
+                <p class="hint">같은 이름은 항상 같은 별명이 돼요. 금액·날짜는 건드리지 않아요.</p>
+              </div>
+              <div class="side-f"><button class="lnk" id="ownHelp" type="button">“내가 정한 말” 쓰는 법 자세히 보기</button></div>
+              <button class="btn sheet-ok" id="sideDone" type="button">완료 · 결과 보기</button>
+            </aside>
+            <div class="res">
+              <div class="rhead">
+                <div class="rtop"><button class="btn2" id="sideOpen" type="button">⚙ 설정 바꾸기</button><button class="lnk" id="b2" type="button">← 다른 파일 고르기</button></div>
+                <h1 id="t3">이렇게 가려졌어요</h1>
+                <div class="kpi"><div><b id="k1">0</b><span>바뀐 칸</span></div><div><b id="k2">0</b><span>서로 다른 이름·번호</span></div></div>
+              </div>
+              <div id="warns"></div>
+              <div id="xlView">
+                <div id="xlBody" hidden>
+                  <div class="sheets" id="sheets"></div>
+                  <div class="tw"><table id="tbl"></table></div>
+                  <p class="hint" id="tblHint"></p>
+                </div>
+              </div>
+              <div id="txView" hidden>
+                <div class="pane-title">가려진 결과</div>
+                <div class="txt" id="txOut"></div>
+              </div>
+              <p class="msg sub" id="nextNote"></p>
+              <section class="ask" id="ask" hidden>
+                <div class="pane-title">AI에게 이렇게 물어보세요 <span class="where">(가린 것을 AI에 올린 뒤 아래 말을 붙여 넣어요)</span></div>
+                <div class="seg" id="askKind" role="group" aria-label="하고 싶은 일"></div>
+                <div class="txt" id="askText"></div>
+                <div class="acts"><button class="btn2" id="askCopy" type="button">질문 복사</button><button class="lnk" id="toRestore" type="button">AI 답에서 원래 이름 찾기 →</button></div>
+              </section>
+              <div class="savebar">
+                <div class="sinfo"><p class="msg ok" id="okline"></p><p class="hint" id="saveHint"></p></div>
+                <div class="acts"><button class="btn" id="main" type="button" disabled>가린 엑셀 저장</button><button class="lnk" id="dl" type="button" title="나중에 AI 답을 진짜 이름으로 되돌리고 싶을 때만 필요해요">별명표 저장 (되돌릴 때만)</button></div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <div class="view" id="v-restore"><div class="wrap">
+      <div class="bar">
+        <div class="kpi"><div><b id="r1">0</b><span>되돌린 곳</span></div><div><b id="r2">0</b><span>쓰는 별명 수</span></div></div>
+        <div class="acts"><button class="lnk" id="backToMask" type="button">← 가리기로 돌아가기</button><button class="lnk" id="loadmap" type="button">별명표 불러오기</button><button class="btn" id="copy2" type="button">되돌린 글 복사</button></div>
+      </div>
+      <details class="how" open><summary>? 이 화면은 언제 쓰나요</summary><div>
+        <p>이 도구는 AI에게 묻지 않아요. <b>AI 사이트(ChatGPT·Claude 등)에서 받은 답</b>을 가져와 별명을 진짜 이름으로 바꿔 주는 화면이에요.</p>
+        <h3>순서</h3>
+        <p>① 이 도구에서 파일·글을 가려요 → ② <b>가린 것만</b> AI 사이트에 올려 질문해요 → ③ AI의 답을 아래 첫 칸에 붙여 넣어요 → ④ 둘째 칸에 진짜 이름으로 바뀐 글이 나오면 <b>되돌린 글 복사</b>.</p>
+        <h3>예</h3>
+        <p>AI 답: <code>A사 단가가 올랐어요. 담당자1께 확인하세요.</code><br>되돌린 글: <code>우리케미칼 단가가 올랐어요. 김민수께 확인하세요.</code></p>
+        <p>AI에 질문하지 않고 가리기만 했다면 이 화면은 쓰지 않아도 돼요. 별명표 파일에는 진짜 이름이 있으니 AI에 올리지 마세요.</p>
+      </div></details>
+      <div id="rinfo"></div>
+      <div class="pane-title">AI의 답 붙여넣기 <span class="where">(AI 사이트에서 받은 답을 붙여 넣는 칸)</span></div>
+      <textarea id="ans" spellcheck="false" aria-label="AI 답변" placeholder="여기에 AI가 준 답을 붙여 넣으세요"></textarea>
+      <div class="pane-title">진짜 이름으로 되돌린 글 <span class="where">(자동으로 채워져요 · 직접 쓰는 칸이 아니에요)</span></div>
+      <div class="txt back" id="back"></div>
+      <div class="pane-title">쓰고 있는 별명표 <span class="where">(별명 ↔ 진짜 이름 · 되돌릴 때 이 표를 봐요)</span></div>
+      <div class="tw" style="max-height:34vh"><table id="maptbl" style="min-width:0"></table></div>
+    </div></div>
+  </main>
+</div>
+<div class="menu" id="menu" role="menu" hidden></div>
+<div class="modal" id="guide" hidden role="dialog" aria-modal="true" aria-labelledby="gTitle"><div class="gbox" id="gbox">
+  <button class="gx" id="guideClose" type="button" aria-label="닫기">×</button>
+  <div class="pane-title">사용법</div>
+  <h2 id="gTitle">엑셀 마스킹, 이렇게 써요</h2>
+  <p class="lead">인터넷에 연결되지 않고 내 컴퓨터 안에서만 움직여요. AI도 쓰지 않고, 정해진 규칙으로 바꿔요.</p>
+  <div class="gs"><i>1</i><b>엑셀 파일을 올려요</b><span>큰 상자에 파일을 끌어다 놓거나, 상자를 눌러 고르세요. 엑셀이 아니라 글이면 “글을 가리고 싶어요”를 누르세요.</span></div>
+  <div class="gs"><i>2</i><b>무엇을 가릴지 골라요</b><span>왼쪽에 이름·전화·메일 같은 종류마다 켜고 끄는 스위치가 있어요. 바꾸면 오른쪽 표가 바로 달라져요. 왼쪽 판은 <b>접기</b>를 눌러 접을 수 있어요.</span></div>
+  <div class="gs"><i>3</i><b>확인하고, 틀린 칸만 바꿔요</b><span>표 맨 위 칸 이름을 누르면 처리 방법을 바꿀 수 있어요(“추천” 표시). 거래처·사람 칸은 A사·담당자1 같은 별명이 돼요.</span></div>
+  <div class="gs"><i>4</i><b>가린 엑셀을 저장해요</b><span>아래의 <b>가린 엑셀 저장</b>을 누르세요. 이 파일만 AI에 올려요. 별명표는 나중에 AI 답을 진짜 이름으로 되돌리고 싶을 때만 저장하면 되고, <b>AI에는 올리지 마세요.</b></span></div>
+  <div class="gs"><i>5</i><b>AI에게 물어봐요</b><span>저장하면 화면에 <b>AI에게 물어볼 말</b>이 나와요. 복사해서 가린 엑셀과 함께 AI에 붙여 넣으세요. 받은 답을 진짜 이름으로 바꾸고 싶으면 그 옆 “AI 답에서 원래 이름 찾기”를 눌러요.</span></div>
+  <h3 id="g-own">“내가 정한 말” 쓰는 법</h3>
+  <p class="hint">왼쪽 판 맨 아래 칸에 적어요. 여러 개는 쉼표로 나누고, <b>*</b>는 “아무 글자나”예요. 적으면 아래에 바뀌는 모습이 바로 보여요.</p>
+  <table class="gtab"><thead><tr><th>하고 싶은 일</th><th>이렇게 적어요</th><th>결과</th></tr></thead><tbody>
+    <tr><td>메일·전화 전체 가리기</td><td>적을 것 없이 이메일/전화번호 스위치만 켜기</td><td><code>메일1</code>, <code>전화1</code></td></tr>
+    <tr><td>특정 말 가리기</td><td><code>프로젝트블루, 신제품X</code></td><td><code>비공개1</code>, <code>비공개2</code></td></tr>
+    <tr><td>바뀔 말을 내가 정하기</td><td><code>프로젝트블루 → 알파</code></td><td><code>알파</code></td></tr>
+    <tr><td>메일 한 사람</td><td><code>minsu.kim@ → 아크</code> (앞부분만 적어도 주소 전체)</td><td><code>아크</code></td></tr>
+    <tr><td>한 회사 메일 모두</td><td><code>@novatech.co.kr → 노바</code></td><td><code>노바</code>, <code>노바2</code>…</td></tr>
+    <tr><td>도메인이 제각각인 모든 메일</td><td><code>*@* → 메일숨김</code></td><td><code>메일숨김</code>, <code>메일숨김2</code>…</td></tr>
+    <tr><td>010으로 시작하는 번호 전부</td><td><code>010-*</code></td><td><code>비공개1</code>…</td></tr>
+  </tbody></table>
+  <h3>꼭 지킬 것</h3>
+  <p class="hint">별명표 파일에는 진짜 이름이 들어 있어요. AI에 올리지 말고 내 컴퓨터에만 두세요. 저장 전 화면의 ⚠ 경고도 꼭 읽고, 목록에 없는 이름은 도구가 못 찾으니 결과를 한 번 훑어보세요.</p>
+  <div class="gfoot"><label><input type="checkbox" id="guideNever"> 다음부터 자동으로 열지 않기</label><button class="btn" id="guideOk" type="button">알겠어요</button></div>
+</div></div>
+<div class="prog" id="prog" hidden role="dialog" aria-modal="true" aria-labelledby="progTitle"><div class="prog-box">
+  <div class="prog-head"><div class="prog-spin" aria-hidden="true"></div><div class="prog-title" id="progTitle">불러오는 중</div></div>
+  <div class="prog-bar" id="progBar" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div class="prog-fill" id="progFill"></div></div>
+  <div class="prog-num"><b id="progPct">0%</b><span id="progDetail"></span></div>
+  <p class="prog-note" id="progNote"></p>
+  <div class="acts"><button class="lnk" id="progCancel" type="button">취소</button></div>
+</div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>/*XLSX*/</script>
+<script>/*CORE*/</script>
+<script>
+(function(){
+"use strict";
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const C=MaskCore, X=XLSX;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const CATS=[
+ {k:"company",t:"거래처 · 회사 이름",eg:"결과 예) Nova Tech → A사",ph:"더 가릴 회사 (쉼표로 구분)"},
+ {k:"person",t:"사람 이름",eg:"결과 예) 김민수 → 담당자1",ph:"더 가릴 사람 (쉼표로 구분)"},
+ {k:"phone",t:"전화번호",eg:"010-… → 전화1"},
+ {k:"email",t:"이메일",eg:"결과 예) a@b.kr → 메일1"},
+ {k:"rrn",t:"주민등록번호",eg:"900101-… → 주민번호1"},
+ {k:"biz",t:"사업자등록번호",eg:"123-45-67890 → 사업자번호1"},
+ {k:"acct",t:"계좌번호",eg:"123-45-678901 → 계좌1"},
+ {k:"own",t:"내가 정한 말",eg:"결과 예) 프로젝트명 → 비공개1",ph:"예) 프로젝트블루 → 알파, *@* → 메일숨김",tip:"여러 개는 쉼표로 나눠요. <b>→</b> 뒤에 바뀔 말을 적으면 그 말로 바뀌고, 안 적으면 비공개1로 바뀌어요. <b>*</b>는 “아무 글자나”예요. <b>*@*</b>는 도메인이 달라도 모든 메일, <b>010-*</b>는 010-으로 시작하는 번호 전부예요. 메일은 앞부분(<b>minsu.kim@</b>)만 적어도 주소 전체가 바뀌어요."}
+];
+const MENU=[["keep","그대로 두기","금액·날짜처럼 가리지 않을 칸"],["person","사람 이름으로 가리기","김민수 → 담당자1"],["company","거래처 이름으로 가리기","삼성전자 → A사"],["text","글 속에서 찾아 가리기","메모 속 이름·전화·메일만 찾기"],["del","지우기","칸 내용을 통째로 비우기"]];
+const SHORT={keep:"그대로",person:"사람 이름",company:"거래처",text:"글 속에서 찾기",del:"지우기"};
+const st={on:{company:true,person:true,phone:true,email:true,rrn:true,biz:true,acct:false,own:true},
+  lists:{company:"",person:"",own:""},fmt:"plain",mode:"xl",tab:"mask",
+  wb:null,file:"",plan:null,info:null,active:0,xl:null,txItems:[],mapItems:null,mapSource:""};
+
+const parseList=s=>String(s||"").split(/[,\n，、]/).map(x=>x.trim()).filter(Boolean);
+const lists=()=>({company:parseList(st.lists.company),person:parseList(st.lists.person),own:parseList(st.lists.own)});
+
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),2600)}
+function renderCats(){
+  $("#cats").innerHTML=CATS.map(c=>`<div class="item${c.ph&&c.k==="own"?" wide":""}"><input class="sw" type="checkbox" id="c_${c.k}" data-k="${c.k}" ${st.on[c.k]?"checked":""}>
+   <label for="c_${c.k}">${c.t}<small>${c.eg}</small></label>
+   ${c.ph?`<div class="f"><input type="text" data-l="${c.k}" value="${esc(st.lists[c.k])}" placeholder="${c.ph}" aria-label="${c.t} 직접 적기"></div>`:""}
+   ${c.tip?`<p class="tip">${c.tip}</p><div class="pv" id="pv_${c.k}"></div>`:""}</div>`).join("");
+  preview();
+}
+/* 내가 정한 말을 적는 즉시, 어떻게 바뀌는지 한 줄씩 보여 준다 */
+function preview(){
+  const el=$("#pv_own");if(!el)return;
+  const ents=parseList(st.lists.own).slice(0,4);
+  el.innerHTML=ents.map(raw=>{
+    const m=C.createMasker({lists:{own:[raw]}});
+    const f=raw.split(/\s*(?:→|->|=>)\s*/)[0].trim();if(!f)return"";
+    const smp=f.includes("*")?f.replace(/\*@\*/,"hong@abc.co.kr").replace(/\*/g,"1234"):f.endsWith("@")?f+"abc.co.kr":f.startsWith("@")?"hong"+f:f;
+    if(/^a@b\.kr$/i.test(f))return"⚠ <b>a@b.kr</b>은 화면 설명용 예시 글자예요. 내 자료에 있는 말을 적어 주세요.";
+    return esc(smp)+" → <b>"+esc(C.plain(m.text(smp)))+"</b>"}).filter(Boolean).join("<br>");
+}
+function hint(){
+  const xl=st.mode==="xl";
+  $("#t1").textContent=xl?"먼저 엑셀 파일을 올려 주세요":"가릴 글을 붙여 넣어 주세요";
+  $("#l1").textContent=xl?"파일은 이 컴퓨터 밖으로 나가지 않아요. 가린 결과만 저장돼요.":"글은 이 컴퓨터 밖으로 나가지 않아요. 붙여 넣으면 바로 가려져요.";
+  $("#sl1").textContent=xl?"파일 올리기":"글 붙여넣기";$("#b2").textContent=xl?"← 다른 파일 고르기":"← 글 다시 붙여넣기";
+  $("#xlIn").hidden=!xl;$("#txIn").hidden=xl;$("#sample").hidden=!xl;$("#tsample").hidden=xl;
+  $("#modeSwitch").textContent=xl?"엑셀이 아니라 글을 가리고 싶어요":"엑셀 파일을 가리고 싶어요";
+  $("#l2").textContent=xl?"처음엔 추천대로 켜져 있어요. 바꾸면 결과 표가 바로 달라져요. 칸별 처리는 표 머리글을 눌러 바꿔요.":"처음엔 추천대로 켜져 있어요. 글 속 사람·회사 이름은 아래 칸에 직접 적어 주세요. 결과가 바로 달라져요.";
+  $("#xlView").hidden=!xl;$("#txView").hidden=xl;
+  $("#t3").textContent=xl?"이렇게 가려졌어요. 괜찮으면 저장하세요":"이렇게 가려졌어요. 괜찮으면 복사하세요";
+  $("#nextNote").textContent=xl?"다음 단계: 가린 엑셀을 AI에 올리세요. 별명표 파일은 진짜 이름이 들어 있으니 AI에 올리지 마세요.":"다음 단계: 가린 글을 AI에 붙여 넣으세요. 별명표 파일은 진짜 이름이 들어 있으니 AI에 올리지 마세요.";
+  $("#main").classList.toggle("done",!!st.savedX);
+  $("#saveHint").textContent=st.savedX?(xl?"✔ 저장했어요 · 위에서 AI에게 물어볼 말을 복사하세요":"✔ 복사했어요 · 위에서 AI에게 물어볼 말을 복사하세요"):"저장하면 AI에게 물어볼 말이 나와요";
+  $("#ask").hidden=!st.savedX;
+  const AK=st.askKind||0;
+  $("#askKind").innerHTML=ASKS.map((a,i)=>`<button type="button" aria-pressed="${i===AK}" data-i="${i}">${a[0]}</button>`).join("");
+  $("#askText").textContent=askPrompt(xl,AK);
+}
+
+/* ---------- AI에게 물어볼 말 (복사용) ---------- */
+const ASKS=[["거래처별 합계","거래처별 금액 합계표를 만들어 주세요."],["메모 요약","메모 칸 내용을 한 줄씩 요약해 주세요."],["납기 늦은 건","납기가 늦어진 건만 골라 알려 주세요."],["직접 쓰기","[여기에 하고 싶은 일을 적으세요]"]];
+function askPrompt(xl,i){return (xl?"첨부한 엑셀은":"아래 글은")+" 개인정보를 별명으로 바꾼 자료예요. A사·담당자1·전화1 같은 별명은 그대로 쓰고, 진짜 이름이나 번호를 추측하지 마세요.\n\n"+ASKS[i][1]+"\n\n답에도 별명을 그대로 써 주세요."}
+/* ---------- 진행 창 (큰 파일일 때 숫자·%·취소) ---------- */
+const BIG=1.5*1024*1024;            // 이 크기 넘는 파일은 바로 진행 창을 띄운다
+const Prog={
+  timer:null,onCancel:null,
+  show(title,o){o=o||{};clearTimeout(this.timer);this.onCancel=o.cancel||null;
+    $("#progTitle").textContent=title;$("#progNote").textContent=o.note||"";
+    $("#progCancel").hidden=!o.cancel;this.set(o.pct,o.detail);$("#prog").hidden=false},
+  later(title,o){clearTimeout(this.timer);this.timer=setTimeout(()=>this.show(title,o),300)},   // 오래 걸릴 때만
+  set(pct,detail){const ind=pct==null;const bar=$("#progBar");bar.classList.toggle("ind",ind);
+    $("#progFill").style.width=ind?"":Math.round(pct)+"%";
+    if(ind)bar.removeAttribute("aria-valuenow");else bar.setAttribute("aria-valuenow",Math.round(pct));
+    $("#progPct").textContent=ind?"잠시만요…":Math.round(pct)+"%";$("#progDetail").textContent=detail||""},
+  hide(){clearTimeout(this.timer);this.onCancel=null;$("#prog").hidden=true}
+};
+$("#progCancel").onclick=()=>{if(Prog.onCancel)Prog.onCancel()};
+const mb=n=>(n/1024/1024).toFixed(1)+"MB";
+const nextPaint=()=>new Promise(r=>requestAnimationFrame(()=>setTimeout(r,30)));
+
+/* ---------- 엑셀 ---------- */
+let loadTok=null;
+function resetXl(){st.big=false;st.hinted=false;st.wb=null;st.xl=null;st.info=null;st.file=null;st.step=1;$$(".step").forEach((el,i)=>el.classList.toggle("on",i===0));render()}
+async function loadWb(buf,name,big){
+  if(big){Prog.show("표를 여는 중",{note:"파일이 커서 이 단계는 시간이 걸려요. 화면이 잠깐 멈춘 것처럼 보여도 정상이에요. (이 단계는 취소할 수 없어요)"});await nextPaint()}
+  let wb;
+  try{wb=X.read(buf,{type:"array"})}catch(e){Prog.hide();toast("엑셀 파일을 열 수 없어요");return}
+  if(!wb.SheetNames.length){Prog.hide();toast("시트가 없는 파일이에요");return}
+  st.wb=wb;st.file=name;st.big=!!big;st.hinted=false;st.info=C.analyze(X,wb);st.active=0;
+  st.plan={sheets:st.info.map(s=>({name:s.name,use:!s.hidden,cols:Object.fromEntries(s.cols.map(c=>[c.c,c.action]))}))};
+  setMode("xl");
+  const ok=await run(big);
+  if(!ok)return;
+  setStep(2);
+  const hid=st.info.filter(s=>s.hidden).length;
+  toast(name+" 열었어요"+(hid?" · 숨은 시트 "+hid+"개는 빼 두었어요":""));
+}
+function readFile(f){
+  if(!f)return;
+  const rd=new FileReader();
+  if(/\.json$/i.test(f.name)){rd.onload=()=>loadMapText(rd.result,f.name);rd.readAsText(f);return}
+  if(!/\.(xlsx|xlsm|xlsb|xls|csv|ods)$/i.test(f.name)){toast("엑셀 파일(.xlsx·.xls·.csv)만 올릴 수 있어요");return}
+  const big=f.size>BIG;
+  if(big){
+    Prog.show("파일을 읽는 중",{pct:0,detail:"0MB / "+mb(f.size),cancel:()=>{rd.abort();Prog.hide();toast("취소했어요")}});
+    rd.onprogress=e=>{if(e.lengthComputable)Prog.set(e.loaded/e.total*100,mb(e.loaded)+" / "+mb(e.total))};
+  }
+  rd.onload=()=>loadWb(new Uint8Array(rd.result),f.name,big);
+  rd.onerror=()=>{Prog.hide();toast("파일을 읽을 수 없어요")};
+  rd.readAsArrayBuffer(f);
+}
+function loadMapText(text,name){
+  try{st.mapItems=C.importMap(text);st.mapSource=name;setTab("restore");renderRestore();toast("별명표 "+st.mapItems.length+"개를 불러왔어요")}
+  catch(e){toast(e.message||"별명표를 읽을 수 없어요")}
+}
+function sampleBook(){
+  const rows=[["일자","거래처","담당자","연락처","이메일","금액(원)","메모"],
+   ["2026-07-03","Nova Tech","김민수","010-2345-6789","minsu.kim@novatech.co.kr",792000,"김민수 팀장 요청으로 재견적"],
+   ["2026-07-08","Sakura Parts","이서연","010-8765-4321","seoyeon@sakura-parts.com",1250000,"단가 협의 완료"],
+   ["2026-07-15","대성정밀","박지훈","02-555-1234","jh.park@daesung.kr",3410000,"납기 9/10로 조정"],
+   ["2026-08-02","미래모터스","최유진","010-4455-9087","yj.choi@miraemotors.kr",2060000,""],
+   ["2026-08-19","한빛전자","정하늘","010-7788-1200","haneul@hanbit.co.kr",1880000,"010-7788-1200으로 회신 요망"],
+   ["2026-09-04","Nova Tech","김민수","010-2345-6789","minsu.kim@novatech.co.kr",1640000,"Nova Tech 박 사장 통화"]];
+  const wb=X.utils.book_new();X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(rows),"거래내역");
+  return X.read(X.write(wb,{type:"array",bookType:"xlsx"}),{type:"array"});
+}
+/* 가리기. 설정을 또 바꾸면 하던 일은 버리고 새로 한다. 반환: 끝까지 했으면 true */
+async function run(big){
+  if(loadTok)loadTok.cancelled=true;
+  if(!st.wb){render();return true}
+  const tok=loadTok={cancelled:false};
+  const t0=Date.now();
+  const fmtP=(p)=>{if(!big&&Date.now()-t0<300)return;const t=Math.min(100,Math.round(p.done/p.total*100));
+    Prog.show(p.phase,{pct:t,detail:Math.min(p.done,p.total).toLocaleString()+" / "+p.total.toLocaleString()+"칸 줄",
+      cancel:()=>{tok.cancelled=true},note:"취소하면 열어 둔 파일을 닫아요. 파일은 다시 올리면 돼요."})};
+  $("#main").disabled=true;
+  try{
+    const res=await C.maskWorkbookAsync(X,st.wb,st.plan,{on:st.on,fmt:st.fmt,lists:lists()},200,fmtP,tok);
+    if(tok.cancelled){
+      if(loadTok===tok){Prog.hide();resetXl();toast("취소했어요 · 파일을 다시 올려 주세요")}   // 새 run 이 대신한 게 아니라 사용자가 취소한 경우
+      return false;
+    }
+    st.xl=res;st.savedX=false;st.savedMap=false;
+  }catch(e){console.error(e);toast("가리는 중 문제가 생겼어요: "+e.message);st.xl=null}
+  if(loadTok===tok)Prog.hide();
+  render();
+  return true;
+}
+
+/* ---------- 그리기 ---------- */
+function warnsHtml(ws,extra){
+  const out=[];
+  for(const w of ws){
+    const off=w.kind==="email"&&!st.on.email?" — 왼쪽 이메일 스위치가 꺼져 있어요(일부러 껐다면 무시하세요)":"";
+    out.push(`<p class="msg warn">⚠ ${esc(w.text)}${off}${w.examples&&w.examples.length?": "+w.examples.map(e=>`<code>${esc(e)}</code>`).join(" "):""}${w.where&&w.where.length?`<br><span class="where">📍 ${w.where.map(esc).join(" / ")}</span>`:""}</p>`);
+  }
+  return out.join("")+(extra||"");
+}
+/* 저장 줄(화면 아래 고정)에 보이는 한 줄: 문제가 없으면 초록, 있으면 위쪽 경고를 보라고 알려 준다 */
+function setOk(ws,show){
+  const el=$("#okline");
+  if(!show){el.textContent="";return}
+  el.classList.toggle("warn",!!ws.length);el.classList.toggle("ok",!ws.length);
+  el.textContent=ws.length?"⚠ 확인할 곳이 있어요 · 표 위쪽 경고를 읽어 주세요":"✔ 남은 이름·번호 모양이 없어요";
+}
+function renderXl(){
+  const has=!!(st.wb&&st.xl);
+  $("#xlBody").hidden=!has;
+  $("#main").disabled=!has;
+  if(!has){$("#k1").textContent=0;$("#k2").textContent=0;$("#warns").innerHTML="";setOk([],false);return}
+  const r=st.xl.report;
+  setOk(r.warnings,true);
+  $("#k1").textContent=r.changed;$("#k2").textContent=r.unique;
+  const rm=r.removed;
+  const rmTxt=[rm.hiddenSheets&&"숨은 시트 "+rm.hiddenSheets,rm.comments&&"메모(주석) "+rm.comments,rm.links&&"링크 "+rm.links,rm.formulas&&"수식 "+rm.formulas+"개는 값으로"].filter(Boolean).join(" · ");
+  $("#warns").innerHTML=warnsHtml(r.warnings,`<p class="msg sub">파일 속 작성자 정보는 빼고 저장해요.${rmTxt?" 함께 정리한 것: "+rmTxt+".":""}</p>`);
+  /* 시트 */
+  $("#sheets").innerHTML=st.info.map((s,i)=>`<div class="one"><input class="sw" type="checkbox" id="s_${i}" data-s="${i}" ${st.plan.sheets[i].use?"checked":""} aria-label="${esc(s.name)} 시트 포함"><button type="button" data-a="${i}" ${i===st.active?'aria-current="true"':""}>${esc(s.name)}${s.hidden?" (숨김)":""}</button></div>`).join("");
+  const si=st.info[st.active],pl=st.plan.sheets[st.active];
+  const rs=r.sheets.find(x=>x.origName===si.name);
+  if(!pl.use||!rs){$("#tbl").innerHTML=`<tbody><tr><td>이 시트는 저장 파일에 넣지 않아요. 위 스위치를 켜면 포함돼요.</td></tr></tbody>`;$("#tblHint").textContent="";return}
+  const head=si.cols.map(c=>{
+    const a=pl.cols[c.c];
+    const sub=a===c.action?SHORT[a]+" · 추천":"바꿈 · "+SHORT[a];
+    return `<th class="${a==="del"?"del":""}${a!==c.action?" chg":""}"><button type="button" class="hb" data-c="${c.c}" aria-haspopup="menu" aria-label="${esc(c.header)} 칸 처리 바꾸기 (지금: ${SHORT[a]})"><span class="hn">${esc(c.header)}</span><span class="hs">${sub}</span></button></th>`;
+  }).join("");
+  const body=rs.preview.slice(1).map(row=>"<tr>"+row.map(cell=>`<td class="${cell.del?"del":""}">${cell.ch?`<mark>${esc(cell.v)}</mark>`:esc(cell.v)}</td>`).join("")+"</tr>").join("");
+  $("#tbl").innerHTML=`<thead><tr>${head}</tr></thead><tbody>${body}</tbody>`;
+  $("#tblHint").textContent=`색 칠한 칸이 바뀐 곳이에요.`+(rs.totalRows-1>rs.preview.length-1?` 미리보기는 ${rs.preview.length-1}줄까지만 보여 줘요(저장 파일에는 전체 ${rs.totalRows-1}줄이 들어가요).`:"");
+}
+function renderTx(){
+  const src=$("#src").value;
+  const seed=st.xl?st.xl.report.items:[];
+  const m=C.createMasker({on:st.on,fmt:st.fmt,lists:lists(),seed,reserved:src});
+  const segs=m.text(src);
+  st.txMasker=m;st.txSegs=segs;st.txItems=m.items();
+  $("#txOut").innerHTML=segs.map(x=>x.m!=null?`<mark>${esc(x.m)}</mark>`:esc(x.s)).join("")||'<span class="msg sub">여기에 결과가 나와요</span>';
+  const n=segs.filter(x=>x.m!=null).length;
+  $("#k1").textContent=n;$("#k2").textContent=new Set(segs.filter(x=>x.m!=null).map(x=>x.m)).size;
+  const tws=src.trim()?C.scan([C.plain(segs)],m):[];
+  $("#warns").innerHTML=warnsHtml(tws);setOk(tws,!!src.trim());
+  $("#main").disabled=!src.trim();
+  updateSteps();
+}
+function render(){
+  const xl=st.mode==="xl";
+  $("#main").textContent=xl?"가린 엑셀 저장":"가린 글 복사";
+  hint();
+  if(st.tab==="mask"){xl?renderXl():renderTx()}
+  else renderRestore();
+  updateSteps();
+}
+/* ---------- 단계 ---------- */
+function canNext(){return st.mode==="xl"?!!(st.wb&&st.xl):!!$("#src").value.trim()}
+function setStep(n){
+  if(n>1&&!canNext())n=1;
+  st.step=n;closeMenu();
+  $$(".step").forEach((el,i)=>el.classList.toggle("on",i+1===n));
+  $("#v-mask .wrap").classList.toggle("wide",n===2);
+  updateSteps();
+  scrollTo(0,0);
+}
+function updateSteps(){
+  const ok=canNext();
+  $$("#steps button").forEach(b=>{const k=+b.dataset.step;
+    b.classList.toggle("done",k<st.step);b.querySelector("em").hidden=!(k<st.step);
+    if(k===st.step)b.setAttribute("aria-current","step");else b.removeAttribute("aria-current");
+    if(k>1&&!ok)b.setAttribute("aria-disabled","true");else b.removeAttribute("aria-disabled")});
+  $("#n1").disabled=!ok;
+  const f=$("#fileNow");
+  f.hidden=!(st.mode==="xl"&&st.wb&&st.xl);if(!f.hidden)f.textContent="✔ "+st.file+" 열었어요 · 다른 파일을 놓으면 바꿔요";
+}
+function currentItems(){
+  if(st.mapItems)return {items:st.mapItems,src:"불러온 별명표 "+st.mapSource};
+  const byAlias=new Map();
+  [...(st.xl?st.xl.report.items:[]),...(st.txItems||[])].forEach(i=>byAlias.set(i.alias,i));
+  return {items:[...byAlias.values()],src:"방금 가린 결과"};
+}
+function renderRestore(){
+  const {items,src}=currentItems();
+  const r=C.restoreText(items,$("#ans").value);
+  $("#r1").textContent=r.count;$("#r2").textContent=items.length;
+  $("#rinfo").innerHTML=items.length?`<p class="msg sub">별명표: ${esc(src)}${st.mapItems?` · <button class="lnk" id="usecur" type="button">방금 가린 결과로 바꾸기</button>`:""}</p>`:`<p class="msg warn">별명표가 아직 없어요. 먼저 가린 뒤에 오거나, <b>별명표 불러오기</b>로 저장해 둔 파일을 열어 주세요.</p>`;
+  const u=$("#usecur");if(u)u.onclick=()=>{st.mapItems=null;renderRestore()};
+  $("#back").innerHTML=r.segs.map(x=>x.m!=null?`<mark>${esc(x.m)}</mark>`:esc(x.s)).join("");
+  st.backText=r.segs.map(x=>x.m!=null?x.m:x.s).join("");
+  $("#maptbl").innerHTML=`<thead><tr><th>별명</th><th>진짜 이름</th></tr></thead><tbody>${items.map(i=>`<tr><td class="rm">${esc(i.alias)}</td><td>${esc(i.orig)}</td></tr>`).join("")}</tbody>`;
+  $("#copy2").disabled=!$("#ans").value.trim();
+}
+
+/* ---------- 동작 ---------- */
+function setMode(m){st.mode=m}
+function setTab(t){st.tab=t;$$(".tabs button").forEach(b=>b.setAttribute("aria-selected",b.dataset.tab===t));$("#v-mask").classList.toggle("on",t==="mask");$("#v-restore").classList.toggle("on",t==="restore")}
+function save(blob,name){const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500)}
+async function copy(text,msg){
+  try{await navigator.clipboard.writeText(text)}catch(e){const t=document.createElement("textarea");t.value=text;document.body.appendChild(t);t.select();document.execCommand("copy");t.remove()}
+  toast(msg);
+}
+function stamp(){const d=new Date(),p=n=>String(n).padStart(2,"0");return d.getFullYear()+p(d.getMonth()+1)+p(d.getDate())+"-"+p(d.getHours())+p(d.getMinutes())}
+function allItems(){return currentItems().items}
+
+$("#cats").addEventListener("change",e=>{const k=e.target.dataset.k;if(k){st.on[k]=e.target.checked;run()}});
+// 큰 파일은 한 글자마다 다시 가리면 계속 멈추므로, Enter 를 누르거나 칸에서 나올 때 한 번만 적용한다
+$("#cats").addEventListener("input",e=>{const k=e.target.dataset.l;if(k){st.lists[k]=e.target.value;if(k==="own")preview();clearTimeout(run.t);
+  if(st.mode==="xl"&&st.wb&&st.big){if(!st.hinted){st.hinted=true;toast("파일이 커서, 다 적고 Enter를 누르면 적용돼요")}return}
+  run.t=setTimeout(run,250)}});
+$("#cats").addEventListener("change",e=>{if(e.target.dataset.l&&st.wb&&st.big){st.lists[e.target.dataset.l]=e.target.value;clearTimeout(run.t);run()}});
+$("#cats").addEventListener("keydown",e=>{if(e.key==="Enter"&&e.target.dataset.l&&st.wb&&st.big){e.preventDefault();e.target.blur()}});
+$("#fmt").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;st.fmt=b.dataset.f;$$("#fmt button").forEach(x=>x.setAttribute("aria-pressed",x===b));run()});
+$("#modeSwitch").onclick=()=>{setMode(st.mode==="xl"?"tx":"xl");setTab("mask");setStep(1);render()};
+$("#n1").onclick=()=>setStep(2);$("#b2").onclick=()=>setStep(1);
+/* 왼쪽 설정 접기/펼치기 (넓은 화면) · 아래에서 올라오는 서랍 (좁은 화면) */
+const narrow=()=>matchMedia("(max-width:900px)").matches;
+function toggleSide(open){
+  const w=$("#work");
+  if(narrow())w.classList.toggle("sheet",open);else{w.classList.toggle("closed",!open);try{localStorage.setItem("xm_side",open?"1":"0")}catch(e){}}
+}
+$("#sideOpen").onclick=()=>toggleSide(true);
+$("#sideClose").onclick=()=>toggleSide(false);$("#sideDone").onclick=()=>toggleSide(false);$("#scrim").onclick=()=>toggleSide(false);
+try{if(localStorage.getItem("xm_side")==="0")$("#work").classList.add("closed")}catch(e){}
+if(narrow())$("#work").classList.add("closed");
+addEventListener("resize",()=>{if(!narrow())$("#work").classList.remove("sheet")});
+/* 표 머리글을 누르면 뜨는 작은 메뉴 */
+let menuFrom=null;
+function closeMenu(refocus){const m=$("#menu");if(!m||m.hidden)return;m.hidden=true;if(refocus&&menuFrom)menuFrom.focus()}
+function openMenu(btn){
+  const si=st.info[st.active],pl=st.plan.sheets[st.active];
+  const col=si.cols.find(c=>String(c.c)===btn.dataset.c);if(!col)return;
+  const cur=pl.cols[col.c],m=$("#menu");menuFrom=btn;
+  m.innerHTML=`<h4>이 칸을 어떻게 할까요?</h4>`+MENU.map(([v,l,ex])=>`<button type="button" role="menuitemradio" aria-checked="${cur===v}" data-v="${v}">${l}${v===col.action?" <small>(추천)</small>":""}<small class="ex">${ex}</small></button>`).join("");
+  m.dataset.c=col.c;m.hidden=false;
+  const r=btn.getBoundingClientRect();
+  m.style.left=Math.max(8,Math.min(r.left,innerWidth-m.offsetWidth-8))+"px";
+  let top=r.bottom+4;if(top+m.offsetHeight>innerHeight-8)top=Math.max(8,r.top-m.offsetHeight-4);
+  m.style.top=top+"px";
+  (m.querySelector('[aria-checked="true"]')||m.querySelector("button")).focus();
+}
+$("#tbl").addEventListener("click",e=>{const b=e.target.closest(".hb");if(!b)return;if(!$("#menu").hidden&&menuFrom===b){closeMenu(true);return}openMenu(b)});
+$("#menu").addEventListener("click",e=>{const b=e.target.closest("button[data-v]");if(!b)return;
+  const c=$("#menu").dataset.c;st.plan.sheets[st.active].cols[c]=b.dataset.v;closeMenu(true);run()});
+document.addEventListener("click",e=>{if(!e.target.closest("#menu")&&!e.target.closest(".hb"))closeMenu()});
+$("#menu").addEventListener("keydown",e=>{const bs=[...$("#menu").querySelectorAll("button")],i=bs.indexOf(document.activeElement);
+  if(e.key==="ArrowDown"){e.preventDefault();bs[(i+1)%bs.length].focus()}else if(e.key==="ArrowUp"){e.preventDefault();bs[(i-1+bs.length)%bs.length].focus()}});
+$(".tw").addEventListener("scroll",()=>closeMenu());addEventListener("scroll",()=>closeMenu(),{passive:true});addEventListener("resize",()=>closeMenu());
+$("#steps").addEventListener("click",e=>{const b=e.target.closest("button");if(!b||b.getAttribute("aria-disabled")==="true")return;setStep(+b.dataset.step)});
+$("#ownHelp").onclick=()=>openGuide("g-own");
+$("#drop").onclick=()=>$("#file").click();
+$("#file").onchange=e=>{readFile(e.target.files[0]);e.target.value=""};
+$("#sample").onclick=()=>{const wb=sampleBook();st.big=false;st.hinted=false;st.wb=wb;st.file="예시.xlsx";st.info=C.analyze(X,wb);st.active=0;st.plan={sheets:st.info.map(s=>({name:s.name,use:true,cols:Object.fromEntries(s.cols.map(c=>[c.c,c.action]))}))};run().then(()=>setStep(2))};
+$("#sheets").addEventListener("change",e=>{const i=e.target.dataset.s;if(i!=null){st.plan.sheets[i].use=e.target.checked;run()}});
+$("#sheets").addEventListener("click",e=>{const b=e.target.closest("button[data-a]");if(b){st.active=+b.dataset.a;render()}});
+$("#src").addEventListener("input",()=>{if(st.tab==="mask")renderTx()});
+$("#tsample").onclick=()=>{$("#src").value="7월 8일 Sakura Parts 이서연 과장과 통화. 단가 협의 후 견적 재전송을 요청했다.\n연락처 010-8765-4321, seoyeon@sakura-parts.com\n대성정밀 박지훈 대리는 납기를 9월 10일로 당겨 달라고 했다.";st.lists.company=st.lists.company||"Sakura Parts, 대성정밀";st.lists.person=st.lists.person||"이서연, 박지훈";renderCats();renderTx()};
+$("#ans").addEventListener("input",renderRestore);
+$("#askKind").addEventListener("click",e=>{const b=e.target.closest("button[data-i]");if(!b)return;st.askKind=+b.dataset.i;render()});
+$("#askCopy").onclick=()=>copy($("#askText").textContent,"질문을 복사했어요 · AI에 붙여 넣으세요");
+$("#toRestore").onclick=()=>{setTab("restore");render()};
+$("#toRestore1").onclick=()=>{setTab("restore");render()};
+$("#backToMask").onclick=()=>{setTab("mask");render()};
+$("#loadmap").onclick=()=>{$("#file").click()};
+$("#copy2").onclick=()=>copy(st.backText||"","되돌린 글을 복사했어요");
+$("#dl").onclick=()=>{
+  const items=allItems();
+  if(!items.length){toast("아직 저장할 별명이 없어요");return}
+  save(new Blob([C.exportMap(items)],{type:"application/json"}),"별명표_"+stamp()+".json");
+  st.savedMap=true;render();
+  toast("별명표를 저장했어요 · 진짜 이름이 들어 있으니 AI에 올리지 마세요");
+};
+$("#main").onclick=async()=>{
+  if(st.mode==="tx"){
+    const out=C.plain(st.txSegs||[]);copy(out,"가린 글을 복사했어요 · AI에 붙여 넣으세요");st.savedX=true;render();return;
+  }
+  if(!st.xl||st.saving)return;
+  st.saving=true;
+  const wb=st.xl.wb;
+  let cells=0;
+  for(const n of wb.SheetNames){const r=wb.Sheets[n]["!ref"];if(r){const d=X.utils.decode_range(r);cells+=(d.e.r-d.s.r+1)*(d.e.c-d.s.c+1)}}
+  const slow=st.big||cells>150000;
+  try{
+    if(slow){
+      // 파일을 만드는 동안은 화면이 한 덩어리로 멈추므로, 먼저 창을 그려 놓고 움직이는 막대(멈춰도 계속 움직임)를 보여 준다
+      Prog.show("엑셀 파일을 만드는 중",{detail:"약 "+(cells>=10000?Math.round(cells/1000)/10+"만":cells.toLocaleString())+" 칸",note:"파일이 커서 시간이 걸려요. 이 단계는 정확한 %를 알 수 없어서 막대로 보여 드려요. (취소할 수 없어요, 잠깐만 기다려 주세요)"});
+      await nextPaint();
+    }
+    const buf=X.write(wb,{bookType:"xlsx",type:"array"});
+    if(slow){Prog.set(90,"파일 저장 준비 중");await nextPaint()}
+    const base=(st.file||"파일").replace(/\.[^.]+$/,"");
+    save(new Blob([buf],{type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"}),base+"_가림.xlsx");
+    if(slow){Prog.set(100,mb(buf.byteLength)+" 저장 완료");await new Promise(r=>setTimeout(r,500))}
+    st.savedX=true;render();
+    toast("저장했어요 · 위에서 AI에게 물어볼 말을 복사하세요");
+  }catch(e){toast("저장하지 못했어요")}
+  finally{st.saving=false;Prog.hide()}
+};
+$("#theme").onclick=()=>{const d=document.documentElement;const cur=d.dataset.theme||(matchMedia("(prefers-color-scheme:dark)").matches?"dark":"light");d.dataset.theme=cur==="dark"?"light":"dark"};
+
+/* 끌어다 놓기 */
+let dd=0;
+addEventListener("dragenter",e=>{e.preventDefault();dd++;document.body.classList.add("dragging")});
+addEventListener("dragleave",e=>{dd=Math.max(0,dd-1);if(!dd)document.body.classList.remove("dragging")});
+addEventListener("dragover",e=>e.preventDefault());
+addEventListener("drop",e=>{e.preventDefault();dd=0;document.body.classList.remove("dragging");readFile(e.dataTransfer.files[0])});
+
+/* 사용법 창 */
+let guideFrom=null;
+function openGuide(anchor){
+  guideFrom=document.activeElement;$("#guide").hidden=false;
+  const b=$("#gbox");b.scrollTop=0;
+  if(anchor){const t=document.getElementById(anchor);if(t)b.scrollTop=t.offsetTop-20}
+  $("#guideOk").focus({preventScroll:true});
+}
+function closeGuide(){
+  if($("#guide").hidden)return;
+  if($("#guideNever").checked){try{localStorage.setItem("xm_guide_off","1")}catch(e){}}
+  $("#guide").hidden=true;if(guideFrom&&guideFrom.focus)guideFrom.focus();
+}
+$("#guideOpen").onclick=()=>openGuide();
+$("#guideOk").onclick=closeGuide;$("#guideClose").onclick=closeGuide;
+$("#guide").addEventListener("click",e=>{if(e.target.id==="guide")closeGuide()});
+addEventListener("keydown",e=>{if(e.key==="Escape"){closeGuide();closeMenu(true);if(narrow())toggleSide(false)}});
+/* 첫 방문에는 저절로 열어 준다 */
+let seen=false;try{seen=localStorage.getItem("xm_guide_off")==="1"}catch(e){}
+/* 가린 엑셀만 저장하고 별명표를 안 저장한 채 떠나면 한 번 물어본다 */
+
+window.__mask={st,run,loadWb,render};
+st.step=1;renderCats();setMode("xl");hint();render();setStep(1);if(!seen)openGuide();
+})();
+</script>
+</body>
+</html>

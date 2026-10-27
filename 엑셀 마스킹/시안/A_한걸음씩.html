@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>이름 가리개 · 시안 A 한 걸음씩</title>
+<style>
+:root{
+  --bg:#f6f1e7; --ink:#23251f; --sub:#6b6a5e; --line:#d6ccb8; --accent:#2f5d4a; --accent-ink:#fff;
+  --mark:#f3dd9a; --warn:#a4421f; --ok:#2f5d4a;
+  --serif:"Noto Serif KR","Nanum Myeongjo","AppleMyungjo","Batang",serif;
+  --sans:"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#1c1e1a;--ink:#ece6d6;--sub:#a5a392;--line:#3b3d35;--accent:#8fc2a8;--accent-ink:#13201a;--mark:#5d4d14;--warn:#f0a07a;--ok:#8fc2a8}
+}
+:root[data-theme="dark"]{--bg:#1c1e1a;--ink:#ece6d6;--sub:#a5a392;--line:#3b3d35;--accent:#8fc2a8;--accent-ink:#13201a;--mark:#5d4d14;--warn:#f0a07a;--ok:#8fc2a8}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:19px/1.75 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:760px;margin:0 auto;padding:40px 24px 120px}
+header{display:flex;justify-content:space-between;align-items:baseline;gap:16px;border-bottom:1px solid var(--line);padding-bottom:14px}
+header b{font:700 20px var(--serif);letter-spacing:.02em}
+header span{color:var(--sub);font-size:16px}
+h1{font:700 44px/1.3 var(--serif);margin:48px 0 8px;letter-spacing:-.01em}
+.lead{color:var(--sub);margin:0 0 36px}
+/* 단계 표시: 숫자 + 글자, 현재는 굵게+밑줄 */
+.steps{display:flex;gap:0;margin:0 0 40px;padding:0;list-style:none;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.steps li{flex:1;min-width:0}
+.steps button{all:unset;cursor:pointer;display:block;width:100%;padding:12px 4px 14px;color:var(--sub);font-size:17px;text-align:left;border-bottom:3px solid transparent;margin-bottom:-1px;transition:color .15s,border-color .15s}
+.steps button:hover{color:var(--ink)}
+.steps button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.steps small{display:block;font:700 15px var(--serif);letter-spacing:.08em}
+.steps li.on button{color:var(--ink);font-weight:700;border-color:var(--accent)}
+.steps li.done button{color:var(--ok)}
+section.step{display:none}
+section.step.on{display:block;animation:rise .35s ease both}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+h2{font:700 30px/1.4 var(--serif);margin:0 0 6px}
+.hint{color:var(--sub);margin:0 0 24px;font-size:18px}
+/* 올려놓는 곳: 박스 대신 굵은 아랫줄 */
+.drop{display:block;width:100%;padding:28px 0;border:0;border-top:1px solid var(--line);border-bottom:2px dashed var(--line);background:none;color:var(--sub);font:inherit;text-align:center;cursor:pointer;transition:background .15s,color .15s,border-color .15s}
+.drop:hover,.drop.over{color:var(--ink);border-bottom-color:var(--accent);background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.or{display:flex;align-items:center;gap:16px;color:var(--sub);font-size:16px;margin:22px 0}
+.or::before,.or::after{content:"";flex:1;border-top:1px solid var(--line)}
+textarea,input[type=text]{width:100%;font:inherit;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);padding:10px 2px;border-radius:0;resize:vertical}
+textarea{min-height:190px;line-height:1.75;border:1px solid var(--line);padding:14px 16px}
+textarea:focus,input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 1px 0 var(--accent)}
+/* 목록 행 */
+.rows{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.rows>li{border-bottom:1px solid var(--line);padding:16px 0}
+.row{display:grid;grid-template-columns:34px 1fr;gap:6px 14px;align-items:start}
+.row label{font-weight:700;cursor:pointer;line-height:1.5}
+.row .eg{color:var(--sub);font-size:16px;font-weight:400;display:block}
+.row .field{grid-column:2}
+.row .field input{font-size:17px}
+/* 맞춤 체크박스 */
+.cb{appearance:none;-webkit-appearance:none;width:26px;height:26px;margin:2px 0 0;border:2px solid var(--ink);border-radius:2px;cursor:pointer;display:grid;place-content:center;background:transparent;transition:background .12s,transform .12s}
+.cb:hover{transform:scale(1.08)}
+.cb:checked{background:var(--accent);border-color:var(--accent)}
+.cb:checked::after{content:"";width:6px;height:12px;border:solid var(--accent-ink);border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.cb:focus-visible,.rd:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.opt{display:flex;gap:28px;flex-wrap:wrap;margin:6px 0 0}
+.opt label{display:flex;align-items:center;gap:10px;cursor:pointer}
+.rd{appearance:none;-webkit-appearance:none;width:22px;height:22px;border:2px solid var(--ink);border-radius:50%;display:grid;place-content:center;cursor:pointer;background:transparent}
+.rd:checked{border-color:var(--accent)}
+.rd:checked::after{content:"";width:10px;height:10px;border-radius:50%;background:var(--accent)}
+h3{font:700 22px var(--serif);margin:36px 0 4px}
+/* 결과 글 */
+.out{white-space:pre-wrap;word-break:break-word;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:20px 0;margin:0 0 20px;min-height:120px}
+mark{background:var(--mark);color:inherit;padding:1px 4px;border-radius:2px;font-weight:700}
+mark.back{background:color-mix(in srgb,var(--accent) 28%,transparent)}
+.sum{display:flex;gap:36px;flex-wrap:wrap;margin:0 0 16px}
+.sum div{line-height:1.2}
+.sum b{display:block;font:700 40px var(--serif)}
+.sum span{font-size:16px;color:var(--sub)}
+.warn{color:var(--warn);margin:0 0 10px}
+.warn b{font-weight:700}
+.good{color:var(--ok);margin:0 0 10px}
+/* 버튼: 주 1개 + 보조는 글자 */
+.nav{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:44px;flex-wrap:wrap}
+.btn{font:700 19px var(--sans);padding:14px 28px;border:2px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:2px;cursor:pointer;transition:transform .12s,filter .12s}
+.btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.btn:active{transform:none}
+.btn:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.link{all:unset;cursor:pointer;color:var(--sub);text-decoration:underline;text-underline-offset:5px;font-size:18px}
+.link:hover{color:var(--ink)}
+.link:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.safe{margin-top:56px;padding-top:16px;border-top:1px solid var(--line);color:var(--sub);font-size:16px}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--ink);color:var(--bg);padding:12px 22px;border-radius:2px;opacity:0;pointer-events:none;transition:.25s;font-size:17px}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+.tools{position:fixed;right:12px;top:10px;font-size:14px}
+.tools button{all:unset;cursor:pointer;color:var(--sub);text-decoration:underline;font-size:14px}
+@media (max-width:560px){
+  body{font-size:18px}
+  .wrap{padding:24px 16px 100px}
+  h1{font-size:32px;margin-top:32px}
+  .steps button{font-size:15px}
+  .steps small{font-size:13px}
+  .nav{flex-direction:column-reverse;align-items:stretch}
+  .btn{width:100%}
+  .link{text-align:center}
+  .sum b{font-size:32px}
+}
+</style>
+</head>
+<body>
+<div class="tools"><button id="theme">밝게/어둡게</button></div>
+<div class="wrap">
+  <header><b>이름 가리개</b><span>이 컴퓨터 안에서만 움직여요 · 인터넷 연결 없음</span></header>
+  <h1>AI에게 보내기 전에,<br>진짜 이름부터 가려요</h1>
+  <p class="lead">네 걸음이면 끝나요. 가린 글을 AI에게 붙여 넣고, 답이 오면 원래 이름으로 되돌립니다.</p>
+
+  <ol class="steps" id="steps">
+    <li><button data-go="0"><small>1</small>넣기</button></li>
+    <li><button data-go="1"><small>2</small>고르기</button></li>
+    <li><button data-go="2"><small>3</small>확인</button></li>
+    <li><button data-go="3"><small>4</small>되돌리기</button></li>
+  </ol>
+
+  <!-- 1 넣기 -->
+  <section class="step on" id="s0">
+    <h2>1. 가릴 글을 넣어 주세요</h2>
+    <p class="hint">엑셀 파일을 끌어다 놓거나, 글을 그대로 붙여 넣으면 돼요.</p>
+    <button class="drop" id="drop" type="button">여기에 엑셀 파일을 끌어다 놓으세요<br><small>또는 눌러서 파일 고르기 (.xlsx)</small></button>
+    <div class="or">또는</div>
+    <textarea id="src" aria-label="가릴 글" spellcheck="false"></textarea>
+    <p class="hint" style="margin-top:10px"><button class="link" id="sample">예시 글 넣어 보기</button></p>
+    <div class="nav"><span></span><button class="btn" data-go="1">다음: 무엇을 가릴지 고르기</button></div>
+  </section>
+
+  <!-- 2 고르기 -->
+  <section class="step" id="s1">
+    <h2>2. 무엇을 가릴까요?</h2>
+    <p class="hint">체크한 것만 가려요. 이름은 직접 알려 주면 100% 찾아내요.</p>
+    <ul class="rows" id="rows"></ul>
+    <h3>가린 이름의 모양</h3>
+    <div class="opt" id="fmt">
+      <label><input class="rd" type="radio" name="fmt" value="plain" checked>A사 · 담당자1</label>
+      <label><input class="rd" type="radio" name="fmt" value="br">[회사A] · [담당자1]</label>
+    </div>
+    <p class="hint" style="margin-top:12px">같은 이름은 어디에 나와도 같은 별명으로 바뀌어요.</p>
+    <div class="nav"><button class="link" data-go="0">← 이전</button><button class="btn" data-go="2">다음: 가려진 결과 보기</button></div>
+  </section>
+
+  <!-- 3 확인 -->
+  <section class="step" id="s2">
+    <h2>3. 이렇게 가려졌어요</h2>
+    <p class="hint">노란 부분이 바뀐 곳이에요. 빠진 곳이 없는지 눈으로 한 번 훑어보세요.</p>
+    <div class="sum" id="sum"></div>
+    <div id="warns"></div>
+    <div class="out" id="out" aria-live="polite"></div>
+    <div class="nav"><button class="link" data-go="1">← 다시 고르기</button><button class="btn" id="copy">가린 글 복사하기</button></div>
+    <p class="safe">별명표(누가 누구인지)는 이 화면에만 있어요. 창을 닫으면 사라지니, 되돌릴 일이 있으면 <button class="link" id="dl" style="font-size:16px">별명표를 파일로 저장</button>해 두세요.</p>
+  </section>
+
+  <!-- 4 되돌리기 -->
+  <section class="step" id="s3">
+    <h2>4. AI의 답을 원래 이름으로</h2>
+    <p class="hint">AI가 준 답을 아래에 붙여 넣으면, 별명이 진짜 이름으로 돌아와요.</p>
+    <textarea id="ans" aria-label="AI 답변" spellcheck="false" placeholder="여기에 AI의 답을 붙여 넣으세요"></textarea>
+    <p class="hint" style="margin-top:10px"><button class="link" id="ansample">예시 답 넣어 보기</button></p>
+    <div class="out" id="back"></div>
+    <div class="nav"><button class="link" data-go="2">← 이전</button><button class="btn" id="copy2">되돌린 글 복사하기</button></div>
+  </section>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const SAMPLE="7월 8일 Sakura Parts 이서연 과장과 통화. 단가 협의 후 견적 재전송을 요청했다.\n연락처 010-8765-4321, seoyeon@sakura-parts.com\n대성정밀 박지훈 대리는 납기를 9월 10일로 당겨 달라고 했다.\nNova Tech 김민수 팀장(02-555-1234)이 결제 조건을 문의했다. 한빛전자는 회신 대기.";
+const CATS=[
+ {k:"company",t:"거래처 · 회사 이름",eg:"Nova Tech → A사",list:"Nova Tech, Sakura Parts, 대성정밀, 미래모터스, 한빛전자",on:true},
+ {k:"person",t:"사람 이름",eg:"김민수 → 담당자1",list:"김민수, 이서연, 박지훈, 최유진, 정하늘",on:true},
+ {k:"phone",t:"전화번호",eg:"010-8765-4321 → 전화1",on:true},
+ {k:"email",t:"이메일",eg:"seoyeon@sakura-parts.com → 메일1",on:true},
+ {k:"rrn",t:"주민등록번호",eg:"900101-1234567 → 주민번호1",on:true},
+ {k:"biz",t:"사업자등록번호",eg:"123-45-67890 → 사업자번호1",on:true},
+ {k:"acct",t:"계좌번호",eg:"국민 123-45-678901 → 계좌1",on:false},
+];
+const RE={email:/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/,rrn:/\d{6}-[1-4]\d{6}/,biz:/\d{3}-\d{2}-\d{5}/,phone:/0\d{1,2}-\d{3,4}-\d{4}/,acct:/\d{2,6}-\d{2,6}-\d{3,8}(?:-\d{1,4})?/};
+const LABEL={company:["사","회사"],person:["담당자"],phone:["전화"],email:["메일"],rrn:["주민번호"],biz:["사업자번호"],acct:["계좌"]};
+const st={on:Object.fromEntries(CATS.map(c=>[c.k,c.on])),list:Object.fromEntries(CATS.filter(c=>c.list).map(c=>[c.k,c.list])),fmt:"plain",step:0,map:null};
+
+function renderRows(){
+  $("#rows").innerHTML=CATS.map(c=>`<li><div class="row">
+   <input class="cb" type="checkbox" id="c_${c.k}" data-k="${c.k}" ${st.on[c.k]?"checked":""}>
+   <label for="c_${c.k}">${c.t}<span class="eg">${c.eg}</span></label>
+   ${c.list?`<div class="field"><input type="text" data-l="${c.k}" value="${st.list[c.k]}" aria-label="${c.t} 목록 (쉼표로 구분)"></div>`:""}
+  </div></li>`).join("");
+}
+function alias(type,n){
+  const br=st.fmt==="br";
+  if(type==="company"){const L=String.fromCharCode(65+(n-1)%26)+(n>26?Math.ceil(n/26):"");return br?`[회사${L}]`:`${L}사`}
+  const w=LABEL[type][0];return br?`[${w}${n}]`:`${w}${n}`;
+}
+function mask(text){
+  const names=[];
+  for(const c of ["company","person"]) if(st.on[c]) st.list[c].split(/[,\n]/).map(s=>s.trim()).filter(Boolean).forEach(n=>names.push({n,c}));
+  names.sort((a,b)=>b.n.length-a.n.length);
+  const nm=new Map(names.map(o=>[o.n.toLowerCase(),o.c]));
+  const parts=["email","rrn","biz","phone","acct"].filter(k=>st.on[k]).map(k=>RE[k].source);
+  names.forEach(o=>parts.push(o.n.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")));
+  const map={},cnt={},segs=[];let last=0,changed=0;
+  if(parts.length){
+    const re=new RegExp(parts.join("|"),"gi");let m;
+    while((m=re.exec(text))){
+      const s=m[0];let type=nm.get(s.toLowerCase());
+      if(!type) type=["email","rrn","biz","phone","acct"].find(k=>st.on[k]&&new RegExp("^(?:"+RE[k].source+")$").test(s));
+      if(!type){continue}
+      const key=type+"|"+s.toLowerCase();
+      if(!map[key]){cnt[type]=(cnt[type]||0)+1;map[key]={orig:s,a:alias(type,cnt[type]),type}}
+      segs.push(text.slice(last,m.index),{m:map[key].a});last=m.index+s.length;changed++;
+    }
+  }
+  segs.push(text.slice(last));
+  return {segs,map,changed};
+}
+const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const segHTML=(segs,cls="")=>segs.map(s=>typeof s==="string"?esc(s):`<mark class="${cls}">${esc(s.m)}</mark>`).join("");
+
+function residual(text,res){
+  const left=res.segs.filter(s=>typeof s==="string").join("");
+  const w=[];
+  const ph=left.match(new RegExp(RE.phone.source,"g"));if(ph)w.push(`전화번호처럼 생긴 글자 ${ph.length}개가 그대로 남았어요 (전화를 가리도록 체크하지 않았어요).`);
+  const em=left.match(new RegExp(RE.email.source,"g"));if(em)w.push(`이메일처럼 생긴 글자 ${em.length}개가 그대로 남았어요.`);
+  const ko=left.match(/[가-힣]{2,4}\s?(?:과장|대리|팀장|부장|사원|차장|이사|사장|님)/g);
+  if(ko)w.push(`<b>${[...new Set(ko)].join(", ")}</b> — 이름 같아 보여요. 사람 이름 목록에 없는 것 같아요.`);
+  return w;
+}
+function update(){
+  const res=mask($("#src").value);st.map=res.map;
+  $("#out").innerHTML=segHTML(res.segs);
+  const kinds=new Set(Object.values(res.map).map(v=>v.type)).size;
+  $("#sum").innerHTML=`<div><b>${res.changed}</b><span>바뀐 곳</span></div><div><b>${Object.keys(res.map).length}</b><span>가린 이름 종류</span></div>`;
+  const w=residual($("#src").value,res);
+  $("#warns").innerHTML=w.length?w.map(x=>`<p class="warn">⚠ ${x}</p>`).join(""):`<p class="good">✔ 남은 이름이나 번호처럼 보이는 글자가 없어요.</p>`;
+  restore();
+}
+function restore(){
+  const a=$("#ans").value,pairs=Object.values(st.map||{}).sort((x,y)=>y.a.length-x.a.length);
+  if(!pairs.length){$("#back").textContent=a;return}
+  const re=new RegExp(pairs.map(p=>p.a.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("|"),"g"),segs=[];let last=0,m;
+  while((m=re.exec(a))){segs.push(a.slice(last,m.index),{m:pairs.find(p=>p.a===m[0]).orig});last=m.index+m[0].length}
+  segs.push(a.slice(last));$("#back").innerHTML=segHTML(segs,"back");
+}
+function go(n){
+  st.step=n;$$(".step").forEach((s,i)=>s.classList.toggle("on",i===n));
+  $$("#steps li").forEach((li,i)=>{li.classList.toggle("on",i===n);li.classList.toggle("done",i<n)});
+  if(n>=2)update();window.scrollTo({top:0,behavior:"smooth"});
+}
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("on");setTimeout(()=>e.classList.remove("on"),1800)}
+document.addEventListener("click",e=>{const g=e.target.closest("[data-go]");if(g)go(+g.dataset.go)});
+document.addEventListener("change",e=>{
+  if(e.target.dataset.k){st.on[e.target.dataset.k]=e.target.checked}
+  if(e.target.name==="fmt"){st.fmt=e.target.value}
+});
+document.addEventListener("input",e=>{if(e.target.dataset.l)st.list[e.target.dataset.l]=e.target.value;if(e.target.id==="ans")restore()});
+$("#sample").onclick=()=>{$("#src").value=SAMPLE;toast("예시 글을 넣었어요")};
+$("#ansample").onclick=()=>{
+  const k=Object.values(st.map||{});const a=k.find(v=>v.type==="company"),b=k.find(v=>v.type==="person");
+  $("#ans").value=`요약: ${a?a.a:"A사"}는 ${b?b.a:"담당자1"}를 통해 단가 협의를 마쳤고, 견적 재전송을 기다립니다.\n제안: ${a?a.a:"A사"}에는 이번 주 안에 확인 메일을 보내세요.`;restore()};
+const copy=async t=>{try{await navigator.clipboard.writeText(t);toast("복사했어요")}catch{toast("복사가 막혀 있어요. 직접 선택해 복사해 주세요")}};
+$("#copy").onclick=()=>copy($("#out").textContent);
+$("#copy2").onclick=()=>copy($("#back").textContent);
+$("#dl").onclick=()=>toast("별명표 파일 저장 (실제 도구에서 동작)");
+$("#drop").onclick=()=>toast("엑셀 읽기는 실제 도구에서 동작해요");
+["dragover","dragenter"].forEach(ev=>$("#drop").addEventListener(ev,e=>{e.preventDefault();$("#drop").classList.add("over")}));
+["dragleave","drop"].forEach(ev=>$("#drop").addEventListener(ev,e=>{e.preventDefault();$("#drop").classList.remove("over");if(ev==="drop")toast("엑셀 읽기는 실제 도구에서 동작해요")}));
+$("#theme").onclick=()=>{const r=document.documentElement,d=matchMedia("(prefers-color-scheme:dark)").matches;const cur=r.dataset.theme||(d?"dark":"light");r.dataset.theme=cur==="dark"?"light":"dark"};
+renderRows();$("#src").value=SAMPLE;go(0);
+</script>
+</body>
+</html>

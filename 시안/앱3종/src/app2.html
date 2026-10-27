@@ -1,0 +1,75 @@
+<title>② AI 데이터 분석·시각화 도우미</title>
+<div class="wrap">
+<header class="top"><p class="step">앱 ② / 3</p><h1>AI 데이터 분석·시각화 도우미</h1><p class="lead">표를 올리면 그래프를 그리고, AI에게 물어볼 질문을 만들어 줍니다. 이름은 가려서 보내요.</p></header>
+<div id="subtabs" role="tablist"></div>
+
+<section class="sub">
+<h2>표 올리기</h2><p class="why">앱 ①에서 받은 "정리됨" 파일이나, 이미 깔끔한 엑셀 표를 올리세요.</p>
+<!--LOAD-->
+<div id="preview" hidden><h3>이렇게 읽었어요</h3><p class="cap">열 종류가 틀렸으면 바꿔 주세요.</p><div id="ptable"></div></div>
+</section>
+
+<section class="sub">
+<h2>그래프 그리기</h2><p class="why">무엇을 보고 싶은지 골라 보세요. 그래프는 이 컴퓨터 안에서만 그려져요.</p>
+<div id="actl"></div>
+<div class="seg" id="kind"><label><input type="radio" name="k" value="bar" checked><span>세로 막대</span></label><label><input type="radio" name="k" value="hbar"><span>가로 막대</span></label><label><input type="radio" name="k" value="line"><span>꺾은선</span></label></div>
+<div id="achart"></div>
+<div id="atable" style="margin-top:16px"></div>
+<div class="row noprint"><button class="btn2" id="dlsvg">그래프 그림 받기 (.svg)</button></div>
+</section>
+
+<section class="sub">
+<h2>AI에게 물어보기</h2><p class="why">① 질문을 복사 → ② ChatGPT나 Gemini에 붙여넣기 → ③ 답을 받아서 다음 단계에 붙여넣기.</p>
+<h3>가릴 이름 고르기</h3>
+<p class="cap">거래처·공급처 같은 이름은 A, B처럼 바꿔서 보내요. 가릴 열을 골라 주세요.</p>
+<div id="maskcols" class="seg"></div>
+<div class="fld" style="max-width:640px;margin-top:10px"><span>AI에게 알고 싶은 것 (바꿔도 돼요)</span><input type="text" id="goal" value="어떤 점이 눈에 띄는지, 이유로 생각해 볼 만한 것과 다음에 확인할 것을 알려 주세요."></div>
+<div class="promptbox" style="margin-top:14px"><textarea id="prompt" readonly aria-label="AI에게 보낼 질문"></textarea></div>
+<div class="row"><button class="btn" id="cpq">질문 복사하기</button><span class="flash" id="fl"></span></div>
+<div class="ai"><a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT 열기<small>붙여넣고 엔터</small></a><a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini 열기<small>붙여넣고 엔터</small></a></div>
+<p class="cap" id="maskinfo"></p>
+</section>
+
+<section class="sub">
+<h2>AI 답 붙여넣기</h2><p class="why">AI가 쓴 답을 아래에 붙여넣으면 가려 둔 이름(A, B…)을 원래 이름으로 되돌려 드려요.</p>
+<textarea class="big" id="ans" placeholder="AI 답변을 여기에 붙여넣기"></textarea>
+<div class="row"><button class="btn" id="cpa">되돌린 답 복사</button><span class="flash" id="fl2"></span></div>
+<h3>되돌린 결과</h3>
+<div class="doc" id="restored" style="white-space:pre-wrap">답을 붙여넣으면 여기에 나와요.</div>
+<div class="callout bad" id="numchk" hidden></div>
+</section>
+<div id="nav"></div>
+</div>
+<script>
+(function(){const {$,$$,esc,fmt}=U;
+let T=null,types=[],cfg=null,kind='bar',map={},maskSel=new Set(),a=null;
+const st=U.stepper(['표 올리기','그래프','AI 질문','답 붙여넣기'],i=>{ if(i>0&&!T){ st.show(0); U.flash($('#msg'),'먼저 표를 올려 주세요'); return;} if(i===1) renderAgg(); if(i===2) renderAsk(); });
+function setTable(t){ T=t; types=U.detectTypes(t); cfg=U.pickDefaults(t,types); maskSel=new Set(); t.header.forEach((h,i)=>{ if(types[i]==='text' && /거래처|공급처|업체|고객|회사|바이어|담당|이름|성명/.test(h)) maskSel.add(i); });
+  $('#preview').hidden=false; U.previewTable($('#ptable'),t,types,()=>{cfg=U.pickDefaults(T,types);}); }
+U.attachLoader({drop:'#drop',file:'#file',sheet:'#sheet',msg:'#msg',paste:'#paste',onTable:setTable});
+$$('#samples button').forEach(b=>b.onclick=()=>{ const raw=window.SNC_RAW[b.dataset.s]; const c=U.toTable(U.parseDelim(raw)); const ty=U.detectTypes(c); const cl=U.clean(c,ty); const t=U.cleanTable(cl); $('#msg').textContent='연습용 자료를 정리해서 불러왔어요 ('+t.rows.length+'줄)'; $('#msg').className='hint'; setTable(t); });
+function renderAgg(){ U.aggControls($('#actl'),T,types,cfg,draw); draw();
+  function draw(){ a=U.aggregate(T,types,cfg); $('#achart').innerHTML=U.chart(a,kind); $('#atable').innerHTML=`<div class="tablebox">${U.aggTable(a,T.header[cfg.key],T.header[cfg.val])}</div>`; }
+  $$('#kind input').forEach(r=>r.onchange=()=>{kind=r.value;draw();}); }
+$('#dlsvg').onclick=()=>{ const s=$('#achart svg'); if(!s) return; const x=s.outerHTML.replace('<svg ','<svg xmlns="http://www.w3.org/2000/svg" font-family="sans-serif" ').replace(/var\(--c(\d)\)/g,(m,d)=>['#1f5f4a','#c9772b','#3d6fa3','#8a5a9b','#a4411f','#6b7d2f'][d-1]).replace(/var\(--text\)/g,'#2a2620').replace(/var\(--sub\)/g,'#6b6458').replace(/var\(--line\)/g,'#ded6c5'); U.download('그래프.svg','<?xml version="1.0" encoding="UTF-8"?>'+x,'image/svg+xml'); };
+function renderAsk(){ if(!a) a=U.aggregate(T,types,cfg);
+  const textCols=T.header.map((h,i)=>types[i]==='text'?i:-1).filter(i=>i>=0);
+  $('#maskcols').innerHTML=textCols.map(i=>`<label><input type="checkbox" data-i="${i}" ${maskSel.has(i)?'checked':''}><span>${esc(T.header[i])}</span></label>`).join('')||'<span class="cap">글자 열이 없어요</span>';
+  $$('#maskcols input').forEach(x=>x.onchange=()=>{ x.checked?maskSel.add(+x.dataset.i):maskSel.delete(+x.dataset.i); build(); });
+  $('#goal').oninput=build; build(); }
+function build(){ const groups={}; maskSel.forEach(i=>{ groups[T.header[i]]=T.rows.map(r=>r[i]); }); map=U.makeAliases(groups);
+  const rows=U.aggRows(a,T.header[cfg.key]); const keyMasked=maskSel.has(cfg.key);
+  const tsv=rows.map((r,ri)=>r.map((c,ci)=>{ if(ri>0&&ci===0&&keyMasked) return map[c]||c; if(ri===0&&typeof c==='string') return U.applyAlias(c,map); return typeof c==='number'?Math.round(c*10)/10:c; }).join('\t')).join('\n');
+  const split=a.splits.length>1&&cfg.split>=0&&maskSel.has(cfg.split);
+  const body=split? U.applyAlias(tsv,map):tsv;
+  const q=`당신은 제조업 회사의 월간 실적을 살펴 주는 분석 도우미입니다.\n아래는 「${T.header[cfg.key]}」별 「${cfg.method==='count'?'줄 수':T.header[cfg.val]+' '+U.METHOD[cfg.method]}」 표입니다. (이름은 A, B처럼 바꿔 놓았어요)\n\n${body}\n\n요청: ${$('#goal').value}\n\n규칙:\n- 표에 있는 숫자만 쓰고, 없는 숫자는 만들지 마세요.\n- 쉬운 말로, 5줄 이내로 답하세요.\n- 확실하지 않은 내용은 "추정"이라고 적으세요.`;
+  $('#prompt').value=q; const n=Object.keys(map).length; $('#maskinfo').textContent=n?`가려진 이름 ${n}개 (예: ${Object.keys(map).slice(0,2).map(k=>k+' → '+map[k]).join(', ')}) — 이 대응표는 이 화면에서만 기억해요.`:'가릴 이름이 선택되지 않았어요. 거래처·사람 이름이 있다면 위에서 골라 주세요.'; }
+$('#cpq').onclick=()=>U.copy($('#prompt').value,$('#fl'));
+function restore(){ const t=U.restoreAlias($('#ans').value,map); $('#restored').textContent=t||'답을 붙여넣으면 여기에 나와요.'; 
+  const nums=(U.restoreAlias($('#ans').value,map).match(/\d[\d,]*(\.\d+)?/g)||[]).map(x=>x.replace(/,/g,'')); const ok=new Set(); U.aggRows(a,'x').forEach(r=>r.forEach(c=>{ if(typeof c==='number'){ ok.add(String(Math.round(c*10)/10)); ok.add(String(Math.round(c))); } })); 
+  const bad=[...new Set(nums.filter(n=>n.length>=3&&!ok.has(n)&&!ok.has(String(+n))))]; const box=$('#numchk');
+  if(!$('#ans').value.trim()){box.hidden=true;return;} box.hidden=false; box.className='callout '+(bad.length?'bad':'ok'); box.innerHTML=bad.length?`<b>표에 없는 숫자가 있어요:</b> ${bad.slice(0,8).join(', ')}<br>AI가 지어냈거나 계산한 숫자일 수 있어요. 보고에 쓰기 전에 꼭 확인하세요.`:'<b>답에 나온 큰 숫자는 모두 표에 있는 숫자예요.</b>'; }
+$('#ans').oninput=restore;
+$('#cpa').onclick=()=>U.copy($('#restored').textContent,$('#fl2'));
+})();
+</script>
