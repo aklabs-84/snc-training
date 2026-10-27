@@ -1,0 +1,113 @@
+<title>정리집계 고치기 시안 C</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<style>
+/* 한 화면에 질문 하나. 큰 글씨, 아래 고정 줄에 되돌리기. 카드·알약 없음 */
+:root{--bg:#fbfbf9;--ink:#13171c;--sub:#5a636d;--line:#d5d9dd;--accent:#0b6b57;--onacc:#fff;--hl:#ffe27a;--bad:#c2410c;--badbg:#ffe9dc;--okbg:#dff3e8}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14181d;--ink:#eef1f4;--sub:#a1abb5;--line:#343c45;--accent:#5fd1ae;--onacc:#06241c;--hl:#7a6310;--bad:#ff9a62;--badbg:#4a2a16;--okbg:#17382c;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14181d;--ink:#eef1f4;--sub:#a1abb5;--line:#343c45;--accent:#5fd1ae;--onacc:#06241c;--hl:#7a6310;--bad:#ff9a62;--badbg:#4a2a16;--okbg:#17382c;color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:400 18px/1.65 "Noto Sans KR",-apple-system,"Apple SD Gothic Neo",sans-serif;padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));padding-block:16px 120px}
+.wrap{max-width:720px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+.steps{display:flex;margin:0;padding:0;list-style:none;font-size:18px}
+.steps li{flex:1;text-align:center;padding:8px 2px;border-bottom:4px solid var(--line);color:var(--sub)}
+.steps .done{color:var(--accent);border-color:var(--accent)}
+.steps .on{color:var(--ink);font-weight:700;border-color:var(--ink)}
+.count{margin:0;color:var(--sub);font-size:18px}
+h1{font-size:28px;line-height:1.4;margin:0;font-weight:900;text-wrap:balance}
+.change{border-top:2px solid var(--ink);border-bottom:2px solid var(--ink);display:grid;grid-template-columns:auto 1fr;column-gap:16px;padding:6px 0}
+.change dt{color:var(--sub);padding:8px 0;font-size:18px}
+.change dd{margin:0;padding:8px 0;font-size:24px;font-weight:700;overflow-wrap:anywhere}
+.change dd.to{color:var(--accent)}
+.why{margin:0;color:var(--sub)}
+.acts{display:flex;flex-direction:column;gap:10px}
+button{font:inherit;cursor:pointer;border-radius:3px;min-height:56px;padding:10px 16px}
+button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.go{background:var(--accent);color:var(--onacc);border:2px solid var(--accent);font-weight:700;font-size:20px}
+.alt{background:none;color:var(--ink);border:2px solid var(--line)}
+.alt:hover{border-color:var(--ink)}
+button:disabled{opacity:.35;cursor:default}
+.own{display:flex;gap:10px;flex-wrap:wrap}
+.own input{flex:1 1 160px;min-width:0;font:inherit;font-size:20px;padding:10px 12px;border:2px solid var(--line);border-radius:3px;background:var(--bg);color:var(--ink)}
+h2{font-size:20px;margin:0}
+.tb{overflow-x:auto;border-top:1px solid var(--line)}
+table{border-collapse:collapse;width:100%;font-size:18px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:left;white-space:nowrap}
+th{color:var(--sub);font-weight:500}
+td.r,th.r{text-align:right}
+td.now{background:var(--badbg);font-weight:700}
+td.ch{background:var(--hl)}
+tr.dup td{text-decoration:line-through;color:var(--sub)}
+.finish{border-top:2px solid var(--ink);padding-top:14px}
+.finish p{margin:0 0 12px}
+.ai{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:12px}
+.ai ol{margin:0;padding-left:24px}
+.ai li{margin-bottom:8px}
+.ai textarea{width:100%;min-height:90px;font:inherit;padding:10px 12px;border:2px solid var(--line);border-radius:3px;background:var(--bg);color:var(--ink)}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:2px solid var(--ink);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));z-index:5}
+.bar div{max-width:720px;margin:0 auto;display:flex;gap:12px;align-items:center}
+.bar .msg{flex:1;min-width:0;color:var(--sub);font-size:18px}
+.bar button{flex:0 0 auto}
+.toast{color:var(--accent);font-weight:700}
+</style>
+
+<div class="wrap">
+  <ol class="steps"><li class="done">① 파일 올리기</li><li class="on">② 고치기</li><li>③ 결과 받기</li></ol>
+  <main id="main" class="wrap" style="gap:22px"></main>
+</div>
+<div class="bar"><div><span class="msg" id="msg"></span><button class="alt" id="undo" disabled>↶ 되돌리기</button></div></div>
+
+<script>
+const BASE=[["2026.03.02","서울","사과 ","12,000원"],["2026-03-05","서울시","사과","8000"],["2026/03/09","부산","배","15,000"],["2026-03-09","부산","배","15,000"],["2026-03-11"," 서울","포도","9000"],["2026-04-01","대구","사과","7000"],["2026.04.03","서울시","배","11,000원"]];
+const HEAD=["날짜","지점","상품","매출"];
+let rows=BASE.map(c=>({c:c.slice(),ch:[0,0,0,0],dup:false})),hist=[],skip=new Set(),toast='';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const vis=v=>esc(v).replace(/^ | $/g,'␣');
+function sug(r,i){const v=r.c[i];
+ if(i==0&&/[./]/.test(v))return{to:v.replace(/[./]/g,'-'),why:'날짜를 모두 같은 모양으로 맞춰요.',kind:'날짜 모양이 달라요'};
+ if(i==3&&/[,원]/.test(v))return{to:v.replace(/[,원]/g,''),why:'"원"과 쉼표가 있으면 합계를 낼 수 없어요.',kind:'숫자에 글자가 붙어 있어요'};
+ if(v!==v.trim())return{to:v.trim(),why:'눈에 안 보이는 빈칸이 붙어 있어요.',kind:'보이지 않는 빈칸이 있어요'};
+ if(i==1&&v.trim()==='서울시')return{to:'서울',why:'"서울"과 같은 곳으로 보여요.',kind:'같은 뜻인데 다르게 적었어요'};
+ return null}
+function issues(){const m=new Map();
+ rows.forEach((r,ri)=>{if(r.dup)return;r.c.forEach((v,i)=>{const s=sug(r,i);if(!s)return;const k=i+'|'+v+'|'+s.to;if(!m.has(k))m.set(k,{k,i,from:v,to:s.to,why:s.why,kind:s.kind,cells:[]});m.get(k).cells.push([ri,i])})});
+ const seen=new Map();
+ rows.forEach((r,ri)=>{if(r.dup)return;const key=r.c.join('|');if(seen.has(key)){const k='dup|'+key;if(!m.has(k))m.set(k,{k,dup:true,from:key.split('|').join(' · '),to:'(한 줄 지우기)',why:'똑같은 줄이 두 번 들어 있어요.',kind:'똑같은 줄이 있어요',cells:[]});m.get(k).cells.push([ri,-1])}else seen.set(key,ri)});
+ return [...m.values()]}
+function snap(){hist.push(JSON.stringify({rows,skip:[...skip]}))}
+function apply(is,val){snap();is.cells.forEach(([ri,i])=>{if(is.dup){rows[ri].dup=true}else{rows[ri].c[i]=val;rows[ri].ch[i]=1}});toast=is.dup?'똑같은 줄을 지웠어요.':`${is.cells.length}곳을 고쳤어요.`;draw()}
+function table(cur){const hot=new Set((cur?cur.cells:[]).map(([r,i])=>r+','+i)),hotRow=new Set((cur&&cur.dup?cur.cells:[]).map(c=>c[0]));
+ return `<div class="tb"><table><tr><th></th>${HEAD.map((h,i)=>`<th class="${i==3?'r':''}">${h}</th>`).join('')}</tr>`+rows.map((r,ri)=>`<tr class="${r.dup?'dup':''}"><th>${ri+1}</th>`+r.c.map((v,i)=>`<td class="${i==3?'r':''} ${hot.has(ri+','+i)||(hotRow.has(ri)&&i==0)?'now':r.ch[i]?'ch':''}">${vis(v)}</td>`).join('')+'</tr>').join('')+'</table></div>'}
+function draw(){
+ const all=issues(),todo=all.filter(x=>!skip.has(x.k));const cur=todo[0],total=all.length;
+ const main=document.getElementById('main');let h='';
+ if(cur){
+  const n=cur.cells.length;
+  h+=`<p class="count">이상한 곳 ${total}가지 중 ${total-todo.length+1}번째 · ${n}곳</p>`;
+  h+=`<h1>${esc(cur.kind)}</h1>`;
+  h+=`<dl class="change"><dt>지금</dt><dd>${cur.dup?'<span>'+esc(cur.from)+'</span>':esc(cur.from.replace(/^ | $/g,m=>'␣'))}</dd><dt>고치면</dt><dd class="to">${esc(cur.to)}</dd></dl>`;
+  h+=`<p class="why">${esc(cur.why)}${n>1?` 같은 곳이 ${n}군데 있어서 한꺼번에 고쳐요.`:''}</p>`;
+  h+=`<div class="acts"><button class="go" data-a="fix">고치기${n>1?` (${n}곳 모두)`:''}</button>`;
+  if(!cur.dup)h+=`<div class="own"><input id="own" value="${esc(cur.to)}" aria-label="직접 쓰기"><button class="alt" data-a="own">이 말로 고치기</button></div>`;
+  h+=`<button class="alt" data-a="skip">그대로 두기</button></div>`;
+  h+=`<h2>내 표 (빨간 칸이 지금 보는 곳)</h2>`+table(cur);
+ }else{
+  h+=`<h1>${total?'남겨 둔 곳이 있어요':'모두 고쳤어요'}</h1>`;
+  h+=`<p class="why">${total?`그대로 둔 곳이 ${total}가지예요. 괜찮으면 다음으로 가세요.`:'이제 합계를 낼 수 있어요.'}</p>`;
+  h+=table(null);
+  h+=`<div class="acts"><button class="go" data-a="next">다음: 결과 받기 →</button>${skip.size?'<button class="alt" data-a="again">그대로 둔 곳 다시 보기</button>':''}</div>`;
+ }
+ h+=`<section class="ai"><h2>AI에게 도움 받기</h2><p class="why">앱이 못 찾은 이상한 곳이 있을 때만 쓰세요.</p><ol><li>고치고 싶은 점을 한 줄로 적어요.</li><li>[질문 복사하기]를 누르고 ChatGPT에 붙여넣어요.</li><li>AI가 준 답을 아래에 붙여넣으면 바뀔 곳을 미리 보여 드려요.</li></ol><button class="alt" data-a="copy">질문 복사하기</button><textarea id="aiin" placeholder="AI의 답을 여기에 붙여넣기" aria-label="AI의 답"></textarea></section>`;
+ main.innerHTML=h;
+ document.getElementById('msg').innerHTML=toast?`<span class="toast">${toast}</span>`:(cur?`남은 곳 ${todo.length}가지`:'끝났어요');
+ document.getElementById('undo').disabled=!hist.length}
+document.getElementById('main').addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a,cur=issues().filter(x=>!skip.has(x.k))[0];
+ if(a=='fix')apply(cur,cur.to);
+ else if(a=='own'){const v=document.getElementById('own').value;if(v.trim()===''){toast='고칠 말을 적어 주세요.';draw();return}apply(cur,v)}
+ else if(a=='skip'){snap();skip.add(cur.k);toast='그대로 뒀어요.';draw()}
+ else if(a=='again'){snap();skip.clear();toast='';draw()}
+ else if(a=='next'){toast='시안이라 여기까지만 보여 드려요.';draw()}
+ else if(a=='copy'){const t='아래 표에서 이상한 값을 찾아 "원래 값 → 바꿀 값" 목록으로 알려줘.';(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>{toast='복사했어요.';draw()}).catch(()=>{toast='복사가 안 되면 글을 눌러 직접 복사하세요.';draw()})}});
+document.getElementById('undo').onclick=()=>{const s=JSON.parse(hist.pop());rows=s.rows;skip=new Set(s.skip);toast='되돌렸어요.';draw()};
+draw();
+</script>
