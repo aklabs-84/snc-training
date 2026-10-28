@@ -66,6 +66,9 @@
 .nxt{display:flex;justify-content:flex-end;margin-top:16px}
 .more{display:flex;justify-content:center;margin:8px 0}
 .dl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.dtl{margin-top:6px}.dtl summary{cursor:pointer;color:var(--sub);padding:6px 0}
+.imp{margin:8px 0}.imp textarea{min-height:80px;font-size:16px}
+.rbox h3{margin:14px 0 6px}.rmsg{min-height:1.5em;margin:4px 0}
 </style>
 <div class="wrap app">
 <div class="bar"><span class="nm" id="fname">① 엑셀 정리·집계 도우미</span><button id="undo" disabled>↶ 되돌리기</button><button id="redo" disabled>↷ 다시</button></div>
@@ -75,6 +78,7 @@
 <!-- ===== ① 파일 올리기 ===== -->
 <section id="v1">
 <h2>① 파일 올리기</h2><p class="why">매달 쓰는 엑셀 파일을 그대로 올리세요. 첫 줄은 제목 줄이어야 해요. 원본 파일은 절대 바뀌지 않아요.</p>
+<div id="rcsel"></div>
 <!--LOAD-->
 </section>
 
@@ -102,9 +106,10 @@
 <h3>그림으로 보기</h3>
 <div class="seg" id="kind"><label><input type="radio" name="k" value="bar" checked><span>세로 막대</span></label><label><input type="radio" name="k" value="hbar"><span>가로 막대</span></label><label><input type="radio" name="k" value="line"><span>꺾은선</span></label></div>
 <div id="achart"></div>
+<div id="rcres"></div>
 <h3>저장하기</h3>
 <div class="dl"><button class="b go" id="dl1">정리된 표 받기 (.csv)</button><button class="b" id="dl2">합계표 받기 (.csv)</button><button class="b" id="cp1">정리된 표 복사 (엑셀에 붙이기)</button><button class="b" id="cp2">합계표 복사</button><span class="flash" id="fl"></span></div>
-<div class="callout ok"><b>다음 달엔?</b> 새 엑셀 파일을 올리고 같은 도구를 한 번씩 누르면 돼요. 받은 .csv는 엑셀에서 더블클릭하면 열리고, 다음 앱(② 분석·시각화, ③ 보고서)에서 그대로 올릴 수 있어요.</div>
+<div class="callout ok"><b>다음 달엔?</b> 위에서 [저장하기]로 정리 방법을 저장해 두고, 다음 달 ① 올리기에서 그 방법을 고르면 같은 정리와 합계가 한 번에 돼요. 받은 .csv는 엑셀에서 더블클릭하면 열리고, 다음 앱(② 분석·시각화, ③ 보고서)에서 그대로 올릴 수 있어요.</div>
 <div class="nxt" style="justify-content:flex-start"><button class="b" data-a="step" data-n="2">← 고치기로 돌아가기</button></div>
 </section>
 </div>
@@ -113,6 +118,10 @@
 /* ===== [구역 A] 앱이 기억하는 것 ===== */
 const DATE_HEAD=/일자|날짜|일시|date|납기|출고일|입고일/i;
 const LIM_STEP=300;
+const KEY='snc_app1_recipes_v1';
+function loadR(){try{const a=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function persistR(){try{localStorage.setItem(KEY,JSON.stringify(RC));return true}catch(e){return false}}
+let RC=loadR(),chosenId='',pendingAgg=null,rname='',armDel=null;
 let D=null,over=[],undo=[],redo=[],log=[],changed=new Set(),sel={r:1,c:0},tab='prob',lim=LIM_STEP,
     ui={checked:new Set(),target:'',find:'',repl:'',scope:'col'},A=null,fname='표',origRows=0,cfg=null,cfgSig='',kind='bar',step=1,aggCt=null,aggA=null;
 const ws=v=>String(v).replace(/[ ​　]/g,' ').replace(/\s+/g,' ').trim();
@@ -161,36 +170,55 @@ function analyze(){
 
 /* ===== [구역 C] 고치는 동작과 되돌리기 ===== */
 const eqD=(a,b)=>a.length===b.length&&a.every((r,i)=>r.length===b[i].length&&r.every((v,j)=>v===b[i][j]));
-function act(label,fn){
+function act(label,fn,op){
   const before=clone(D),ob=over.slice();changed=new Set();fn();
-  if(eqD(before,D)){toast('고칠 곳이 없어요.');renderAll();return false}
-  undo.push({d:before,over:ob,label});if(undo.length>40)undo.shift();redo=[];log.push(label);toast('했어요: '+label);fixSel();renderAll();return true;
+  if(eqD(before,D)&&JSON.stringify(ob)===JSON.stringify(over)){toast('고칠 곳이 없어요.');renderAll();return false}
+  undo.push({d:before,over:ob,label,op});if(undo.length>60)undo.shift();redo=[];log.push({label,op});toast('했어요: '+label);fixSel();renderAll();return true;
 }
 function fixSel(){sel.r=Math.min(Math.max(sel.r,0),D.length-1);sel.c=Math.min(sel.c,D[0].length-1)}
-function doUndo(){const it=undo.pop();if(!it)return;redo.push({d:clone(D),over:over.slice(),label:it.label});D=it.d;over=it.over;log.pop();changed=new Set();toast('되돌렸어요: '+it.label);fixSel();renderAll()}
-function doRedo(){const it=redo.pop();if(!it)return;undo.push({d:clone(D),over:over.slice(),label:it.label});D=it.d;over=it.over;log.push(it.label);changed=new Set();toast('다시 했어요: '+it.label);fixSel();renderAll()}
+function doUndo(){const it=undo.pop();if(!it)return;redo.push({d:clone(D),over:over.slice(),label:it.label,op:it.op});D=it.d;over=it.over;log.pop();changed=new Set();toast('되돌렸어요: '+it.label);fixSel();renderAll()}
+function doRedo(){const it=redo.pop();if(!it)return;undo.push({d:clone(D),over:over.slice(),label:it.label,op:it.op});D=it.d;over=it.over;log.push({label:it.label,op:it.op});changed=new Set();toast('다시 했어요: '+it.label);fixSel();renderAll()}
 function fixKinds(kinds,col){const an=analyze();an.flags.forEach((f,k)=>{const[r,c]=k.split(',').map(Number);if(f.to!=null&&kinds.includes(f.kind)&&(col==null||col===c)){D[r][c]=f.to;changed.add(k)}})}
 function delRows(list){const s=new Set(list);D=D.filter((r,i)=>i===0||!s.has(i));changed=new Set()}
 function fillDown(c){for(let r=2;r<D.length;r++){if(ws(D[r][c])===''&&!isBlankRow(D[r])&&ws(D[r-1][c])!==''){D[r][c]=D[r-1][c];changed.add(r+','+c)}}}
 function delCol(c){D=D.map(r=>r.filter((_,i)=>i!==c));over.splice(c,1);changed=new Set();cfg=null}
-function tool(k){const c=sel.c,nm=L(c)+'칸',an=analyze();
-  if(k==='all')act('추천대로 모두 고치기',()=>{for(let i=0;i<3;i++){const b=clone(D);fixKinds(FIXABLE);if(eqD(b,D))break}});
-  else if(k==='trim')act(`${nm} 빈칸 지우기`,()=>{for(let r=1;r<D.length;r++){const v=ws(D[r][c]);if(D[r][c]!==v){D[r][c]=v;changed.add(r+','+c)}}});
-  else if(k==='date'){if(an.types[c]!=='date'){toast(`${nm}은 날짜 칸으로 읽히지 않아요. 아래 [읽는 종류]를 날짜로 바꿔 보세요.`);return}act(`${nm} 날짜 맞추기`,()=>fixKinds(['date','trim'],c))}
-  else if(k==='num'){if(an.types[c]!=='num'){toast(`${nm}은 숫자 칸으로 읽히지 않아요. 아래 [읽는 종류]를 숫자로 바꿔 보세요.`);return}act(`${nm} 숫자만 남기기`,()=>fixKinds(['num','trim'],c))}
-  else if(k==='fill')act(`${nm} 빈칸을 위 값으로 채우기`,()=>fillDown(c));
-  else if(k==='empty'){if(!an.empty.length){toast('빈 줄이 없어요.');return}act('빈 줄 지우기',()=>delRows(an.empty))}
-  else if(k==='dup'){if(!an.dup.length){toast('똑같은 줄이 없어요.');return}act('같은 줄 지우기',()=>delRows(an.dup))}
+const colIdx=n=>D[0].findIndex(h=>ws(h)===ws(n));
+const run=(label,op)=>act(label,()=>applyOp(op),op);
+/* 되풀이할 수 있는 일(정리 방법에 저장되는 것)은 모두 여기서 실행해요. 칸은 번호가 아니라 제목으로 찾아요. */
+function applyOp(o){
+  const c=o.col!=null?colIdx(o.col):-1;if(o.col!=null&&c<0)return false;
+  if(o.t==='auto'){for(let i=0;i<3;i++){const b=clone(D);fixKinds(FIXABLE);if(eqD(b,D))break}}
+  else if(o.t==='kind')fixKinds([o.kind]);
+  else if(o.t==='trim'){for(let r=1;r<D.length;r++){const v=ws(D[r][c]);if(D[r][c]!==v){D[r][c]=v;changed.add(r+','+c)}}}
+  else if(o.t==='date')fixKinds(['date','trim'],c);
+  else if(o.t==='num')fixKinds(['num','trim'],c);
+  else if(o.t==='fill')fillDown(c);
+  else if(o.t==='empty')delRows(analyze().empty);
+  else if(o.t==='dup')delRows(analyze().dup);
+  else if(o.t==='delcol')delCol(c);
+  else if(o.t==='map'){const set=new Set(o.from.map(ws));for(let r=1;r<D.length;r++){if(set.has(ws(D[r][c]))&&D[r][c]!==o.to){D[r][c]=o.to;changed.add(r+','+c)}}}
+  else if(o.t==='rep'){for(let r=1;r<D.length;r++)for(let k=0;k<D[r].length;k++){if((c<0||k===c)&&D[r][k].includes(o.find)){D[r][k]=D[r][k].split(o.find).join(o.repl);changed.add(r+','+k)}}}
+  else if(o.t==='type')over[c]=o.type;
+  return true}
+function tool(k){const c=sel.c,h=D[0][c],nm=`${L(c)}칸 「${h}」`,an=analyze();
+  if(k==='all')run('추천대로 모두 고치기',{t:'auto'});
+  else if(k==='trim')run(`${nm} 빈칸 지우기`,{t:'trim',col:h});
+  else if(k==='date'){if(an.types[c]!=='date'){toast(`${L(c)}칸은 날짜 칸으로 읽히지 않아요. 아래 [읽는 종류]를 날짜로 바꿔 보세요.`);return}run(`${nm} 날짜 맞추기`,{t:'date',col:h})}
+  else if(k==='num'){if(an.types[c]!=='num'){toast(`${L(c)}칸은 숫자 칸으로 읽히지 않아요. 아래 [읽는 종류]를 숫자로 바꿔 보세요.`);return}run(`${nm} 숫자만 남기기`,{t:'num',col:h})}
+  else if(k==='fill')run(`${nm} 빈칸을 위 값으로 채우기`,{t:'fill',col:h});
+  else if(k==='empty'){if(!an.empty.length){toast('빈 줄이 없어요.');return}run('빈 줄 지우기',{t:'empty'})}
+  else if(k==='dup'){if(!an.dup.length){toast('똑같은 줄이 없어요.');return}run('같은 줄 지우기',{t:'dup'})}
   else if(k==='row'){if(sel.r<1){toast('제목 줄은 지울 수 없어요. 아래 줄의 번호를 눌러 주세요.');return}act(`${sel.r+1}번 줄 지우기`,()=>delRows([sel.r]))}
-  else if(k==='col'){if(D[0].length<2){toast('마지막 칸은 지울 수 없어요.');return}const nmv=D[0][c];act(`${nm} 「${nmv}」 지우기`,()=>delCol(c))}}
+  else if(k==='col'){if(D[0].length<2){toast('마지막 칸은 지울 수 없어요.');return}run(`${nm} 지우기`,{t:'delcol',col:h})}}
 const TOOLS=[['all','추천대로 모두 고치기',1],['trim','빈칸 지우기'],['date','날짜 맞추기'],['num','숫자만 남기기'],['fill','위 값으로 채우기'],['empty','빈 줄 지우기'],['dup','같은 줄 지우기'],['row','이 줄 지우기'],['col','이 칸 지우기']];
 
 /* ===== [구역 D] 표 올리기 ===== */
 function setTable(t,name){
   D=[t.header.slice()].concat(t.rows.map(r=>r.slice()));origRows=t.rows.length;over=[];undo=[];redo=[];log=[];changed=new Set();cfg=null;cfgSig='';lim=LIM_STEP;
   fname=(name||'표').replace(/\.[^.]+$/,'');ui={checked:new Set(),target:'',find:'',repl:'',scope:'col'};tab='prob';
+  pendingAgg=null;const rc=RC.find(x=>String(x.id)===String(chosenId));sel={r:1,c:0};changed=new Set();const rmsg=rc?applyRecipe(rc):'';
   const an=analyze(),first=[...an.flags.keys()][0];sel=first?{r:+first.split(',')[0],c:+first.split(',')[1]}:{r:1,c:0};
-  $('#fname').textContent=fname;go(2);toast(`${origRows}줄을 읽었어요. 주황색 칸이 이상한 곳이에요.`);
+  $('#fname').textContent=fname;go(2);toast(rmsg||`${origRows}줄을 읽었어요. 주황색 칸이 이상한 곳이에요.`);
 }
 U.attachLoader({drop:'#drop',file:'#file',sheet:'#sheet',msg:'#msg',paste:'#paste',onTable:setTable});
 $$('#samples button').forEach(b=>b.onclick=()=>{const t=U.toTable(U.parseDelim(window.SNC_RAW[b.dataset.s]));setTable(t,b.textContent)});
@@ -225,7 +253,7 @@ function renderInfo(){
 }
 function renderTabs(){
   const total=A.flags.size+A.empty.length+A.dup.length;
-  $('#tabs').innerHTML=[['prob',`이상한 곳 ${total}`],['vals','값 목록'],['find','바꾸기'],['log',`한 일 ${log.length}`]].map(([k,t])=>`<button data-a="tab" data-k="${k}" class="${tab===k?'on':''}">${t}</button>`).join('');
+  $('#tabs').innerHTML=[['prob',`이상한 곳 ${total}`],['vals','값 목록'],['find','바꾸기'],['log',`한 일·저장`]].map(([k,t])=>`<button data-a="tab" data-k="${k}" class="${tab===k?'on':''}">${t}</button>`).join('');
 }
 function renderPanel(){
   const P=$('#panel');let h='';
@@ -250,7 +278,7 @@ function renderPanel(){
     h=`<h2>찾아 바꾸기</h2><label class="fld"><span>찾을 말</span><input type="text" id="fnd" value="${esc(ui.find)}"></label><label class="fld"><span>바꿀 말 (비워 두면 지워요)</span><input type="text" id="rep" value="${esc(ui.repl)}"></label>`+
      `<label class="fld"><span>어디에서?</span><select id="scp"><option value="col" ${ui.scope==='col'?'selected':''}>지금 고른 ${L(sel.c)}칸만</option><option value="all" ${ui.scope==='all'?'selected':''}>표 전체</option></select></label><p class="dim" id="fcnt"></p><div class="tools"><button class="b go" data-a="doreplace">바꾸기</button></div>`;
   }else{
-    h=`<h2>지금까지 한 일</h2>`+(log.length?`<ol class="log">${log.map(x=>`<li>${esc(x)}</li>`).join('')}</ol><p class="dim">맨 위 [되돌리기]를 누르면 마지막 일부터 취소돼요.</p>`:'<p class="dim">아직 한 일이 없어요. 원본 파일은 바뀌지 않아요.</p>');
+    h=`<h2>지금까지 한 일 ${log.length}건</h2>`+(log.length?`<ol class="log">${log.map(x=>`<li>${esc(x.label)}${x.op?'':' <span class="dim">(저장 안 돼요)</span>'}</li>`).join('')}</ol><p class="dim">맨 위 [되돌리기]를 누르면 마지막 일부터 취소돼요.</p>`:'<p class="dim">아직 한 일이 없어요. 원본 파일은 바뀌지 않아요.</p>')+recipeBox();
   }
   P.innerHTML=h;if(tab==='find')updFind();
 }
@@ -270,6 +298,7 @@ function autoSim(){const c=sel.c,m={},n={};ui.checked=new Set();ui.target='';
 document.addEventListener('click',e=>{
   const b=e.target.closest('.app [data-a]');if(!b)return;const a=b.dataset.a;
   if(a==='step'){go(+b.dataset.n);return}
+  if(recipeAction(a,b))return;
   if(!D)return;
   if(a==='cell'){sel={r:+b.dataset.r,c:+b.dataset.c};changed=new Set();ui.checked=new Set();ui.target='';renderAll()}
   else if(a==='col'){sel.c=+b.dataset.c;ui.checked=new Set();ui.target='';renderAll()}
@@ -277,27 +306,30 @@ document.addEventListener('click',e=>{
   else if(a==='more'){lim+=LIM_STEP;renderAll()}
   else if(a==='tab'){tab=b.dataset.k;renderAll()}
   else if(a==='goto'){const[r,c]=b.dataset.k.split(',').map(Number);if(r>lim)lim=Math.ceil(r/LIM_STEP)*LIM_STEP;sel={r,c};ui.checked=new Set();ui.target='';renderAll();const t=document.querySelector('#grid td.cur');if(t)t.scrollIntoView({block:'nearest',inline:'nearest'});$('#grid').scrollIntoView({block:'nearest'})}
-  else if(a==='fixkind'){const kd=b.dataset.k;act(KIND[kd].replace(/요$/,'던 것 고치기'),()=>fixKinds([kd]))}
+  else if(a==='fixkind'){const kd=b.dataset.k;run(KIND[kd].replace(/요$/,'던 것 고치기'),{t:'kind',kind:kd})}
   else if(a==='fixcell'){const f=A.flags.get(sel.r+','+sel.c);if(f&&f.to!=null)act(`${ref(sel.r,sel.c)} 칸 고치기`,()=>{D[sel.r][sel.c]=f.to;changed.add(sel.r+','+sel.c)})}
   else if(a==='gosim'){const[r,c]=b.dataset.k.split(',').map(Number);sel={r,c};tab='vals';ui.checked=new Set();ui.target='';A=analyze();autoSim();renderAll()}
   else if(a==='tool'){tool(b.dataset.k)}
   else if(a==='chk'){const v=$('#panel')._list[+b.dataset.i];b.checked?ui.checked.add(v):ui.checked.delete(v);if(!ui.target&&ui.checked.size===1){ui.target=ws(v);$('#tgt').value=ui.target}}
   else if(a==='autosim'){autoSim();renderAll()}
   else if(a==='merge'){const to=(($('#tgt')||{}).value||ui.target).trim(),c=sel.c,set=ui.checked;if(!set.size){toast('합칠 값에 체크해 주세요.');return}if(to===''){toast('바꿀 말을 써 주세요.');return}
-    act(`${L(c)}칸 ${set.size}가지 값을 「${to}」로 합치기`,()=>{for(let r=1;r<D.length;r++){if(set.has(D[r][c])){D[r][c]=to;changed.add(r+','+c)}}});ui.checked=new Set();ui.target=''}
+    run(`${L(c)}칸 ${set.size}가지 값을 「${to}」로 합치기`,{t:'map',col:D[0][c],from:[...set],to});ui.checked=new Set();ui.target=''}
   else if(a==='doreplace'){const f=ui.find,t=ui.repl,c=sel.c;if(!f){toast('찾을 말을 써 주세요.');return}
-    act(`「${f}」→「${t}」 바꾸기`,()=>{for(let r=1;r<D.length;r++)for(let k=0;k<D[r].length;k++){if((ui.scope==='all'||k===c)&&D[r][k].includes(f)){D[r][k]=D[r][k].split(f).join(t);changed.add(r+','+k)}}})}
+    run(`「${f}」→「${t}」 바꾸기`,{t:'rep',col:ui.scope==='all'?null:D[0][c],find:f,repl:t})}
 });
 $('#undo').onclick=doUndo;$('#redo').onclick=doRedo;
 $('#fx').addEventListener('change',()=>{if(!D)return;const v=$('#fx').value,r=sel.r,c=sel.c;if(v===D[r][c])return;act(`${ref(r,c)} 칸 직접 고치기`,()=>{D[r][c]=v;changed.add(r+','+c)})});
 $('#fx').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
 document.addEventListener('input',e=>{const t=e.target;
   if(t.id==='tgt')ui.target=t.value;
+  if(t.classList&&t.classList.contains('rname'))rname=t.value;
   if(t.id==='fnd'){ui.find=t.value;updFind()}
   if(t.id==='rep')ui.repl=t.value;
   if(t.id==='scp'){ui.scope=t.value;updFind()}});
 document.addEventListener('change',e=>{const t=e.target;
-  if(t.id==='ctype'){over[sel.c]=t.value;toast(`${L(sel.c)}칸을 ${U.TYPE_LABEL[t.value]} 칸으로 읽어요.`);renderAll()}});
+  if(t.id==='ctype'){run(`${L(sel.c)}칸 「${D[0][sel.c]}」을 ${U.TYPE_LABEL[t.value]} 칸으로 읽기`,{t:'type',col:D[0][sel.c],type:t.value})}
+  if(t.id==='rsel')chosenId=t.value;
+  if(t.classList&&t.classList.contains('rfile')&&t.files[0]){const f=t.files[0],rd=new FileReader();rd.onload=()=>importRecipes(String(rd.result));rd.readAsText(f);t.value=''}});
 
 /* ===== [구역 G] ③ 결과 받기: 합계 + 저장 ===== */
 function cleanTable(){return{header:D[0],rows:D.slice(1).filter(r=>!isBlankRow(r))}}
@@ -305,7 +337,10 @@ function renderResult(){
   const an=analyze(),ct=cleanTable(),types=an.types,left=an.flags.size+an.empty.length+an.dup.length;
   $('#sumline').innerHTML=`<div class="stats"><div><div class="big-num">${ct.rows.length}줄</div><div class="big-lab">정리된 표 (처음 ${origRows}줄)</div></div><div><div class="big-num">${log.length}건</div><div class="big-lab">고친 일</div></div></div>`+
     (left?`<div class="callout bad">아직 이상한 곳이 ${left}곳 남아 있어요. <button class="b" data-a="step" data-n="2">고치러 가기</button></div>`:'<div class="callout ok">이상한 곳이 없어요. 이대로 합계를 내도 돼요.</div>');
-  const sig=types.join()+'|'+D[0].join('|');if(!cfg||sig!==cfgSig){cfg=U.pickDefaults(ct,types);cfgSig=sig}
+  $('#rcres').innerHTML=recipeBox();
+  const sig=types.join()+'|'+D[0].join('|');
+  if(pendingAgg){const ag=aggFromNames(pendingAgg);if(pendingAgg.kind){kind=pendingAgg.kind;$$('#kind input').forEach(x=>x.checked=x.value===kind)}if(ag){cfg=ag;cfgSig=sig}else toast('저장한 합계 설정의 칸 이름이 이 파일에 없어서 기본 설정으로 보여 드려요.');pendingAgg=null}
+  if(!cfg||sig!==cfgSig){cfg=U.pickDefaults(ct,types);cfgSig=sig}
   U.aggControls($('#actl'),ct,types,cfg,draw);draw();
   function draw(){aggA=U.aggregate(ct,types,cfg);aggCt=ct;
     $('#aout').innerHTML=`<div class="stats"><div><div class="big-num">${fmt(aggA.grand)}</div><div class="big-lab">${aggA.method==='avg'?'전체 평균':'전체'} ${U.METHOD[aggA.method]}</div></div><div><div class="big-num">${aggA.keys.length}</div><div class="big-lab">묶음 개수</div></div></div><div class="tablebox">${U.aggTable(aggA,ct.header[cfg.key],ct.header[cfg.val])}</div>`;
@@ -318,7 +353,56 @@ $('#dl2').onclick=()=>U.download(fname+'_합계.csv',U.toCSV(sumRows()));
 $('#cp1').onclick=()=>{const t=cleanTable();U.copy([t.header].concat(t.rows).map(r=>r.join('\t')).join('\n'),$('#fl'))};
 $('#cp2').onclick=()=>U.copy(sumRows().map(r=>r.join('\t')).join('\n'),$('#fl'));
 
-go(1);
+/* ===== [구역 H] 내 정리 방법: 저장하고, 다음 파일에 한 번에 적용 ===== */
+const OPS=['auto','kind','trim','date','num','fill','empty','dup','delcol','map','rep','type'];
+const str=x=>typeof x==='string';
+function validOp(o){return o&&OPS.includes(o.t)&&(o.col==null||str(o.col))&&(o.t!=='map'||(Array.isArray(o.from)&&o.from.every(str)&&str(o.to)))&&(o.t!=='rep'||(str(o.find)&&str(o.repl)))&&(o.t!=='type'||['date','num','text'].includes(o.type))&&(o.t!=='kind'||FIXABLE.includes(o.kind))&&(['trim','date','num','fill','delcol','map','type'].includes(o.t)?o.col!=null:true)}
+function aggNames(){if(!cfg||cfg.key>=D[0].length||cfg.val>=D[0].length||cfg.split>=D[0].length)return null;return{key:D[0][cfg.key],month:cfg.month,val:D[0][cfg.val],method:cfg.method,split:cfg.split>=0?D[0][cfg.split]:null,kind}}
+function aggFromNames(a){const key=colIdx(a.key),val=colIdx(a.val),split=a.split==null?-1:colIdx(a.split);if(key<0||(a.method!=='count'&&val<0)||(a.split!=null&&split<0))return null;return{key,month:!!a.month,val:val<0?0:val,method:a.method,split}}
+function applyRecipe(rc){
+  const skipped=[];let did=0,fixedN=0;changed=new Set();
+  rc.ops.forEach(({label,op})=>{
+    if(op.col!=null&&colIdx(op.col)<0){skipped.push(label);return}
+    const before=clone(D),ob=over.slice();applyOp(op);
+    const ch=!(eqD(before,D)&&JSON.stringify(ob)===JSON.stringify(over));
+    undo.push({d:before,over:ob,label,op});if(undo.length>60)undo.shift();redo=[];log.push({label,op});did++;if(ch)fixedN++});
+  pendingAgg=rc.agg||null;fixSel();
+  return `「${rc.name}」 방법을 적용했어요. ${did}가지를 해서 ${fixedN}가지에서 실제로 고쳤어요.`+(skipped.length?` 이 파일에 칸 이름이 없어 건너뛴 것 ${skipped.length}가지: ${skipped.slice(0,3).join(' / ')}`:'');
+}
+function importHTML(){return `<details class="dtl imp"><summary>다른 컴퓨터에서 가져오기</summary><p class="dim">다른 곳에서 복사한 글자를 붙여넣거나, 받아 둔 파일을 고르세요.</p><textarea class="rimp" aria-label="가져올 정리 방법" placeholder="여기에 붙여넣기"></textarea><div class="tools"><button class="b" data-a="rimp">가져오기</button><label class="b" style="display:inline-flex;align-items:center;cursor:pointer">파일 고르기<input type="file" class="rfile" accept=".json,.txt" hidden></label></div></details>`}
+function recipeBox(){
+  const nOps=log.filter(x=>x.op).length,skip=log.length-nOps,agg=cfg&&aggNames();
+  let h=`<div class="rbox"><h3>내 정리 방법 저장하기</h3><p class="dim">지금까지 한 일 중 다시 쓸 수 있는 ${nOps}가지${agg?'와 합계 설정을':'를'} 저장해요. 다음에 비슷한 엑셀을 올릴 때 한 번에 적용돼요.${skip?` (칸을 직접 고치거나 줄 하나를 지운 ${skip}가지는 저장되지 않아요.)`:''}${agg?'':' 합계 설정도 저장하려면 ③ 결과 받기에서 저장하세요.'}</p>`+
+   `<label class="fld"><span>이름</span><input type="text" class="rname" value="${esc(rname||fname+' 정리 방법')}"></label><div class="tools" style="margin-top:8px"><button class="b go" data-a="rsave">저장하기</button></div><p class="flash rmsg" role="status"></p>`+
+   (RC.length?RC.map(r=>`<div class="prow"><div class="t"><b>${esc(r.name)}</b><span>${r.ops.length}가지 · ${esc(r.date||'')}${r.agg?' · 합계 설정 있음':''}</span><details class="dtl"><summary>들어 있는 일 보기</summary><ol class="log">${r.ops.map(x=>`<li>${esc(x.label)}</li>`).join('')}</ol></details></div><div class="bt">${D?`<button class="b go" data-a="rapply" data-id="${r.id}">이 파일에 적용</button>`:''}<button class="b" data-a="rcopy" data-id="${r.id}">복사</button><button class="b" data-a="rdl" data-id="${r.id}">파일로 받기</button><button class="b" data-a="rdel" data-id="${r.id}">${String(armDel)===String(r.id)?'정말 지울까요?':'지우기'}</button></div></div>`).join(''):'<p class="dim">저장한 정리 방법이 아직 없어요.</p>')+importHTML()+'</div>';
+  return h}
+function renderRecipes(){
+  const el=$('#rcsel');
+  el.innerHTML=`<h3>내 정리 방법 쓰기 <span class="cap">(선택)</span></h3>`+(RC.length?`<label class="fld"><span>저장해 둔 방법을 고르면, 파일을 올릴 때 자동으로 정리해 드려요</span><select id="rsel"><option value="">쓰지 않기 (직접 고치기)</option>${RC.map(r=>`<option value="${r.id}" ${String(chosenId)===String(r.id)?'selected':''}>${esc(r.name)} (${r.ops.length}가지)</option>`).join('')}</select></label>`:'<p class="dim">저장한 정리 방법이 아직 없어요. ②에서 고친 뒤 저장해 두면 다음부터 여기서 고를 수 있어요.</p>')+importHTML();
+  if(D){if(step===3)$('#rcres').innerHTML=recipeBox();if(step===2&&tab==='log')renderPanel()}
+}
+function rflash(m){$$('.rmsg').forEach(e=>e.textContent=m);toast(m)}
+function importRecipes(text){
+  let a;try{a=JSON.parse(text)}catch(e){rflash('읽을 수 없는 글자예요. 복사한 정리 방법 전체를 붙여넣어 주세요.');toast('읽을 수 없는 글자예요. 복사한 정리 방법 전체를 붙여넣어 주세요.');return}
+  if(!Array.isArray(a))a=[a];let n=0;
+  a.forEach((r,i)=>{if(r&&str(r.name)&&Array.isArray(r.ops)&&r.ops.length&&r.ops.every(x=>x&&str(x.label)&&validOp(x.op))){const rc={id:Date.now()+i,name:r.name,date:str(r.date)?r.date:'',ops:r.ops.map(x=>({label:x.label,op:x.op})),agg:r.agg&&str(r.agg.key)?r.agg:null};const k=RC.findIndex(x=>x.name===rc.name);if(k>=0)RC[k]=rc;else RC.push(rc);n++}});
+  if(n){persistR();renderRecipes()}toast(n?`${n}개를 가져왔어요.`:'가져올 수 있는 정리 방법이 없어요. 글자가 다 복사됐는지 확인해 주세요.');rflash(n?`${n}개를 가져왔어요.`:'가져올 수 있는 정리 방법이 없어요.');
+}
+function recipeAction(a,b){
+  const rc=RC.find(x=>String(x.id)===String(b.dataset.id)),box=b.closest('.rbox,.imp,#rcsel');
+  if(a==='rsave'){const ops=log.filter(x=>x.op);if(!ops.length){rflash('저장할 일이 아직 없어요. 먼저 고쳐 보세요.');return true}
+    const name=((b.closest('.rbox').querySelector('.rname')||{}).value||'').trim()||fname+' 정리 방법';
+    const r={id:Date.now(),name,date:new Date().toISOString().slice(0,10),ops:ops.map(x=>({label:x.label,op:x.op})),agg:cfg?aggNames():null};
+    const k=RC.findIndex(x=>x.name===name);if(k>=0)RC[k]=r;else RC.push(r);rname='';chosenId=r.id;
+    const ok=persistR();renderRecipes();rflash(ok?`저장했어요: 「${name}」 (${ops.length}가지)`:'저장했지만 이 컴퓨터에는 남기지 못했어요. [복사]나 [파일로 받기]로 꼭 따로 보관하세요.');return true}
+  if(a==='rapply'){if(!D||!rc)return true;const m=applyRecipe(rc);toast(m);if(step===3)renderResult();else renderAll();renderRecipes();return true}
+  if(a==='rcopy'){if(rc)U.copy(JSON.stringify(rc),box.querySelector('.rmsg')||$('#fl'));return true}
+  if(a==='rdl'){if(rc)U.download(rc.name+'.json',JSON.stringify(rc,null,1),'application/json');return true}
+  if(a==='rdel'){if(!rc)return true;if(String(armDel)===String(rc.id)){RC=RC.filter(x=>x!==rc);persistR();armDel=null;if(String(chosenId)===String(rc.id))chosenId='';renderRecipes();rflash('지웠어요.')}else{armDel=rc.id;renderRecipes()}return true}
+  if(a==='rimp'){importRecipes(box.querySelector('.rimp').value);return true}
+  return false}
+
+renderRecipes();go(1);
 /* ===== [기능 추가 자리] 수업에서 AI로 만든 새 기능은 이 아래에 붙여요 ===== */
 })();
 </script>
