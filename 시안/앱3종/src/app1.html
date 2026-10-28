@@ -66,6 +66,10 @@
 .nxt{display:flex;justify-content:flex-end;margin-top:16px}
 .more{display:flex;justify-content:center;margin:8px 0}
 .dl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.pick tr{cursor:pointer}.pick td,.pick th{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick tr.pk td,.pick tr.pk th{background:var(--sel);font-weight:700;color:var(--text)}
+.pick tr.skip td,.pick tr.skip th{color:var(--sub);text-decoration:line-through;opacity:.6}
+.pick th{width:48px;text-align:center;position:static}
 .dtl{margin-top:6px}.dtl summary{cursor:pointer;color:var(--sub);padding:6px 0}
 .imp{margin:8px 0}.imp textarea{min-height:80px;font-size:16px}
 .rbox h3{margin:14px 0 6px}.rmsg{min-height:1.5em;margin:4px 0}
@@ -77,9 +81,18 @@
 
 <!-- ===== ① 파일 올리기 ===== -->
 <section id="v1">
-<h2>① 파일 올리기</h2><p class="why">매달 쓰는 엑셀 파일을 그대로 올리세요. 첫 줄은 제목 줄이어야 해요. 원본 파일은 절대 바뀌지 않아요.</p>
+<h2>① 파일 올리기</h2><p class="why">매달 쓰는 엑셀 파일을 그대로 올리세요. 표 위에 제목이나 작성자 줄이 있어도 괜찮아요. 칸 이름이 있는 줄을 같이 고르게 해 드려요. 원본 파일은 절대 바뀌지 않아요.</p>
 <div id="rcsel"></div>
 <!--LOAD-->
+</section>
+
+<!-- ===== 제목 줄 고르기 ===== -->
+<section id="vh" hidden>
+<h2>칸 이름이 있는 줄을 골라 주세요</h2>
+<p class="why" id="hdrwhy"></p>
+<div class="tablebox pick" id="hdrtbl"></div>
+<p class="cap" id="hdrcap"></p>
+<div class="dl"><button class="b go" data-a="hdrgo">이 줄로 시작하기</button><button class="b" data-a="hdrcancel">그대로 두기</button></div>
 </section>
 
 <!-- ===== ② 고치기 ===== -->
@@ -121,7 +134,7 @@ const LIM_STEP=300;
 const KEY='snc_app1_recipes_v1';
 function loadR(){try{const a=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
 function persistR(){try{localStorage.setItem(KEY,JSON.stringify(RC));return true}catch(e){return false}}
-let RC=loadR(),chosenId='',pendingAgg=null,rname='',armDel=null;
+let RC=loadR(),chosenId='',pendingAgg=null,rname='',armDel=null,pend=null,pickIdx=0,hdrIdx=0;
 let D=null,over=[],undo=[],redo=[],log=[],changed=new Set(),sel={r:1,c:0},tab='prob',lim=LIM_STEP,
     ui={checked:new Set(),target:'',find:'',repl:'',scope:'col'},A=null,fname='표',origRows=0,cfg=null,cfgSig='',kind='bar',step=1,aggCt=null,aggA=null;
 const ws=v=>String(v).replace(/[ ​　]/g,' ').replace(/\s+/g,' ').trim();
@@ -209,8 +222,9 @@ function tool(k){const c=sel.c,h=D[0][c],nm=`${L(c)}칸 「${h}」`,an=analyze()
   else if(k==='empty'){if(!an.empty.length){toast('빈 줄이 없어요.');return}run('빈 줄 지우기',{t:'empty'})}
   else if(k==='dup'){if(!an.dup.length){toast('똑같은 줄이 없어요.');return}run('같은 줄 지우기',{t:'dup'})}
   else if(k==='row'){if(sel.r<1){toast('제목 줄은 지울 수 없어요. 아래 줄의 번호를 눌러 주세요.');return}act(`${sel.r+1}번 줄 지우기`,()=>delRows([sel.r]))}
+  else if(k==='repick'){if(!pend){toast('먼저 파일을 올려 주세요.');return}pickIdx=hdrIdx;renderPicker();go('h')}
   else if(k==='col'){if(D[0].length<2){toast('마지막 칸은 지울 수 없어요.');return}run(`${nm} 지우기`,{t:'delcol',col:h})}}
-const TOOLS=[['all','추천대로 모두 고치기',1],['trim','빈칸 지우기'],['date','날짜 맞추기'],['num','숫자만 남기기'],['fill','위 값으로 채우기'],['empty','빈 줄 지우기'],['dup','같은 줄 지우기'],['row','이 줄 지우기'],['col','이 칸 지우기']];
+const TOOLS=[['all','추천대로 모두 고치기',1],['trim','빈칸 지우기'],['date','날짜 맞추기'],['num','숫자만 남기기'],['fill','위 값으로 채우기'],['empty','빈 줄 지우기'],['dup','같은 줄 지우기'],['row','이 줄 지우기'],['col','이 칸 지우기'],['repick','제목 줄 다시 고르기']];
 
 /* ===== [구역 D] 표 올리기 ===== */
 function setTable(t,name){
@@ -220,14 +234,38 @@ function setTable(t,name){
   const an=analyze(),first=[...an.flags.keys()][0];sel=first?{r:+first.split(',')[0],c:+first.split(',')[1]}:{r:1,c:0};
   $('#fname').textContent=fname;go(2);toast(rmsg||`${origRows}줄을 읽었어요. 주황색 칸이 이상한 곳이에요.`);
 }
-U.attachLoader({drop:'#drop',file:'#file',sheet:'#sheet',msg:'#msg',paste:'#paste',onTable:setTable});
-$$('#samples button').forEach(b=>b.onclick=()=>{const t=U.toTable(U.parseDelim(window.SNC_RAW[b.dataset.s]));setTable(t,b.textContent)});
+U.attachLoader({drop:'#drop',file:'#file',sheet:'#sheet',msg:'#msg',paste:'#paste',onTable:(t,name,raw)=>offer(t,name,raw)});
+$('#file').addEventListener('click',e=>{e.target.value=''});/* 같은 파일을 다시 골라도 열리게 */
+$$('#samples button').forEach(b=>b.onclick=()=>{const raw=U.parseDelim(window.SNC_RAW[b.dataset.s]);offer(U.toTable(raw),b.textContent,raw)});
+/* 표 위에 제목·작성자 줄이 있으면 칸 이름 줄을 고르게 해요 */
+function guessHeader(rows){
+  const nz=r=>r.filter(v=>String(v).trim()!=='').length;
+  const maxW=Math.max(1,...rows.slice(0,60).map(nz));
+  for(let i=0;i<Math.min(rows.length,30);i++){
+    const r=rows[i],n=nz(r);if(maxW>=2&&n<2)continue;if(n<maxW*0.6)continue;
+    const cells=r.map(v=>String(v).trim()).filter(Boolean);
+    if(cells.filter(v=>isNaN(U.parseNum(v))&&!U.parseDate(v,false)).length/cells.length<0.8)continue;
+    if(new Set(cells).size<cells.length*0.8)continue;
+    if(i<rows.length-1&&!rows.slice(i+1,i+6).some(x=>nz(x)>=Math.max(1,n*0.5)))continue;
+    return i}
+  return 0}
+function offer(t,name,raw){
+  const rows=(raw||[]).filter(r=>r.some(c=>String(c).trim()!==''));
+  if(!rows.length){toast('내용이 비어 있어요.');return}
+  pend={name,rows};const gi=guessHeader(rows);
+  if(gi===0){const t0=U.toTable(rows);if(!t0){toast('표를 찾지 못했어요.');return}hdrIdx=0;setTable(t0,name)}
+  else{pickIdx=gi;renderPicker();go('h')}}
+function renderPicker(){
+  const rows=pend.rows.slice(0,40),mc=Math.min(8,Math.max(1,...rows.map(r=>r.length)));
+  $('#hdrwhy').textContent=(D&&log.length?'다시 고르면 지금까지 고친 일이 사라져요. ':'')+(pickIdx>0?`앱이 ${pickIdx+1}번째 줄을 칸 이름으로 골랐어요. 맞으면 아래 [이 줄로 시작하기]를 누르고, 틀렸으면 맞는 줄을 눌러 주세요. 초록색 줄 위의 ${pickIdx}줄은 표에서 빼요.`:'칸 이름이 있는 줄을 눌러 주세요. 초록색 줄 위의 줄은 표에서 빼요.');
+  $('#hdrtbl').innerHTML='<table><tbody>'+rows.map((r,i)=>`<tr class="${i<pickIdx?'skip':i===pickIdx?'pk':''}" data-a="hdr" data-i="${i}"><th>${i===pickIdx?'✓':i+1}</th>`+Array.from({length:mc},(_,c)=>`<td>${esc(r[c]==null?'':r[c])}</td>`).join('')+'</tr>').join('')+'</tbody></table>';
+  $('#hdrcap').textContent=`번호는 빈 줄을 뺀 순서예요.${pend.rows.length>40?` 처음 40줄만 보여요.`:''}`}
 
 /* ===== [구역 E] 화면 그리기 ===== */
 function go(n){
-  if(n>1&&!D){toast('먼저 파일을 올려 주세요.');return}
-  step=n;['v1','v2','v3'].forEach((id,i)=>$('#'+id).hidden=(i+1!==n));
-  $('#stp').innerHTML=['① 올리기','② 고치기','③ 결과 받기'].map((t,i)=>`<li class="${i+1===n?'on':i+1<n?'done':''}"><button data-a="step" data-n="${i+1}">${t}</button></li>`).join('');
+  if((n===2||n===3)&&!D){toast('먼저 파일을 올려 주세요.');return}
+  step=n==='h'?1:n;['v1','v2','v3','vh'].forEach(id=>$('#'+id).hidden=true);$('#'+(n==='h'?'vh':'v'+n)).hidden=false;
+  $('#stp').innerHTML=['① 올리기','② 고치기','③ 결과 받기'].map((t,i)=>`<li class="${i+1===step?'on':i+1<step?'done':''}"><button data-a="step" data-n="${i+1}">${t}</button></li>`).join('');
   if(n===2)renderAll();if(n===3)renderResult();window.scrollTo({top:0});
 }
 function renderTools(){$('#tools').innerHTML=TOOLS.map(([k,t,g])=>`<button class="b ${g?'go':''}" data-a="tool" data-k="${k}">${t}</button>`).join('')}
@@ -299,6 +337,9 @@ document.addEventListener('click',e=>{
   const b=e.target.closest('.app [data-a]');if(!b)return;const a=b.dataset.a;
   if(a==='step'){go(+b.dataset.n);return}
   if(recipeAction(a,b))return;
+  if(a==='hdr'){pickIdx=+b.dataset.i;renderPicker();return}
+  if(a==='hdrgo'){const t=U.toTable(pend.rows.slice(pickIdx));if(!t){toast('이 줄 아래에 데이터가 없어요. 다른 줄을 골라 주세요.');return}hdrIdx=pickIdx;setTable(t,pend.name);return}
+  if(a==='hdrcancel'){go(D?2:1);return}
   if(!D)return;
   if(a==='cell'){sel={r:+b.dataset.r,c:+b.dataset.c};changed=new Set();ui.checked=new Set();ui.target='';renderAll()}
   else if(a==='col'){sel.c=+b.dataset.c;ui.checked=new Set();ui.target='';renderAll()}

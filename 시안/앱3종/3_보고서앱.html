@@ -420,7 +420,7 @@ const U = (function(){
   function attachLoader(o){
     let sheets=[]; const drop=$(o.drop), file=$(o.file), sel=$(o.sheet), msg=$(o.msg);
     const say=(t,bad)=>{ msg.textContent=t; msg.className = bad?'warn':'hint'; };
-    const use=i=>{ const t=toTable(sheets[i].rows); if(!t){ say('표를 찾지 못했어요. 첫 줄(제목 줄)까지 있는 표인지 확인해 주세요.',true); return; } say(`"${sheets[i].name}" 시트에서 ${t.rows.length}줄을 읽었어요.`); o.onTable(t, sheets[i].name); };
+    const use=i=>{ const t=toTable(sheets[i].rows); if(!t){ say('표를 찾지 못했어요. 첫 줄(제목 줄)까지 있는 표인지 확인해 주세요.',true); return; } say(`"${sheets[i].name}" 시트에서 ${t.rows.length}줄을 읽었어요.`); o.onTable(t, sheets[i].name, sheets[i].rows); };
     const handle=async f=>{ if(!f) return; say('읽는 중…'); try{ sheets=await readFile(f); sheets=sheets.filter(s=>s.rows.length); if(!sheets.length) throw new Error('내용이 비어 있어요'); sel.innerHTML=sheets.map((s,i)=>`<option value="${i}">${esc(s.name)}</option>`).join(''); sel.closest('.fld').hidden = sheets.length<2; use(0); }catch(e){ say(e.message||'파일을 읽지 못했어요',true); } };
     file.onchange=()=>handle(file.files[0]);
     sel.onchange=()=>use(+sel.value);
