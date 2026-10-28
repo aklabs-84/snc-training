@@ -3,7 +3,12 @@
 0부터 차례대로 다시 매겨요. 줄 번호가 겹치면 한글에서 파일이 열리지 않아요.
 실행: python3 make_hwpx.py"""
 import importlib.util,zipfile,re,glob,os,sys
-SK=(glob.glob('/root/.claude/skills/synced/*/hwpx-lecture-planner')+[''])[0]
+_home=os.path.expanduser('~')
+_found=(glob.glob('/root/.claude/skills/synced/*/hwpx-lecture-planner')
+        +glob(_home+'/.claude/skills/**/hwpx-lecture-planner',recursive=True)
+        +glob(_home+'/.claude/plugins/**/hwpx-lecture-planner',recursive=True))
+if not _found:sys.exit('hwpx-lecture-planner 스킬(양식 파일)을 찾지 못했어요. 스킬 폴더 위치를 SK 변수에 직접 적어 주세요.')
+SK=_found[0]
 spec=importlib.util.spec_from_file_location("fill_hwpx",SK+"/scripts/fill_hwpx.py");mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
 TEMPLATE=SK+"/assets/template.hwpx"
 OUT=os.path.join(os.path.dirname(os.path.abspath(__file__)),"강의계획서_완성본_20261028.hwpx")
