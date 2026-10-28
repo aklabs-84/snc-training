@@ -86,26 +86,89 @@ ol.steps{padding-left:1.4em}ol.steps li{margin:6px 0}
 @media print{body{background:#fff;color:#000}header.top,#subtabs,#nav,.noprint{display:none!important}.sub{display:none}.sub.printme{display:block}.doc{border:0;padding:0}}
 </style></head><body><title>① 엑셀 정리·집계 도우미</title>
 <style>
-td[contenteditable]:focus{outline:2px solid var(--c2);outline-offset:-2px;background:var(--paper);cursor:text}
-td[contenteditable]{cursor:text}
-.vgrp{padding:2px 0;margin:8px 0;border-left:4px solid transparent;padding-left:12px}
-.vgrp.sim{border-left-color:var(--c2);background:var(--paper)}
-.vrow{display:flex;gap:10px;align-items:center;padding:3px 0;cursor:pointer}
-.vrow input{width:20px;height:20px;accent-color:var(--accent)}
-.vv{font-family:ui-monospace,Menlo,monospace}
-.vscroll{max-height:380px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:8px 14px;background:var(--bg)}
-details.more{margin:10px 0}details.more summary{cursor:pointer;color:var(--sub);padding:8px 0}
-.found{display:block;color:var(--text);font-size:16px;margin-top:2px}
-.found code,.vv{background:var(--bg);padding:0 5px;border-radius:3px}
-.x{border:0;background:none;color:var(--sub);cursor:pointer;font-size:16px;padding:0 6px}.x:hover{color:var(--warn)}
+/* 엑셀 화면 그대로: 맨 위 되돌리기 줄 → 도구 줄 → 수식줄 → 표 → 아래 안내판 */
+:root{--flag:#ffe3d1;--sel:#e3efe7;--mark:#d9480f}
+@media (prefers-color-scheme:dark){:root{--flag:#4d2b17;--sel:#1f3a2c;--mark:#ff9660}}
+.app{padding-bottom:70px}
+.bar{position:sticky;top:0;z-index:10;background:var(--accent);color:var(--accent-ink);margin:0 -20px;padding:8px 20px;display:flex;gap:8px;align-items:center}
+@media (max-width:600px){.bar{margin:0 -16px;padding:8px 16px}}
+.bar .nm{flex:1;min-width:0;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar button{font:inherit;min-height:48px;padding:6px 14px;background:transparent;color:var(--accent-ink);border:1.5px solid var(--accent-ink);border-radius:3px;cursor:pointer}
+.bar button:disabled{opacity:.4;cursor:default}
+.stp{display:flex;margin:12px 0 0;padding:0;list-style:none}
+.stp li{flex:1}
+.stp button{width:100%;font:inherit;background:none;border:0;border-bottom:4px solid var(--line);padding:8px 2px;color:var(--sub);cursor:pointer}
+.stp .on button{color:var(--text);font-weight:700;border-color:var(--text)}
+.stp .done button{color:var(--accent);border-color:var(--accent)}
+.msg2{margin:10px 0;min-height:1.7em;color:var(--accent);font-weight:700}
+.app button.b{font:inherit;cursor:pointer;border-radius:3px;min-height:48px;padding:6px 14px;border:1.5px solid var(--line);background:var(--paper);color:var(--text)}
+.app button.b:hover{border-color:var(--accent)}
+.app button.go{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:700}
+.app button.b:disabled{opacity:.35;cursor:default}
+.app button:focus-visible,.app input:focus-visible,.app select:focus-visible{outline:3px solid var(--c2);outline-offset:1px}
+.tools{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin}
+.tools button{flex:0 0 auto;white-space:nowrap}
+.fxbar{display:flex;border:1.5px solid var(--line);background:var(--paper);margin-top:6px}
+.fxbar .nb{flex:0 0 68px;display:flex;align-items:center;justify-content:center;border-right:1.5px solid var(--line);font-weight:700;background:var(--bg)}
+.fxbar .fxl{flex:0 0 40px;display:flex;align-items:center;justify-content:center;color:var(--sub);font-style:italic;border-right:1.5px solid var(--line)}
+.fxbar input{flex:1;min-width:0;border:0;font:inherit;padding:8px 10px;background:var(--paper);color:var(--text);border-radius:0}
+.info{margin:8px 0;color:var(--sub);display:flex;gap:8px 14px;flex-wrap:wrap;align-items:center}
+.info select{font-size:17px;padding:4px 8px}
+.fixline{margin:0 0 8px;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+#grid{overflow:auto;max-height:46vh;min-height:200px;border:1.5px solid var(--line);background:var(--paper)}
+#grid table{border-collapse:separate;border-spacing:0;width:auto;font-size:18px;font-variant-numeric:tabular-nums}
+#grid th,#grid td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:6px 10px;white-space:nowrap;min-width:96px;max-width:220px;overflow:hidden;text-overflow:ellipsis;height:44px;position:relative;background:var(--paper);text-align:left}
+#grid thead th{position:sticky;top:0;z-index:3;background:var(--bg);text-align:center;cursor:pointer;font-weight:700}
+#grid thead th b{color:var(--mark);margin-left:4px}
+#grid thead th:first-child{left:0;z-index:5;min-width:48px;max-width:48px;cursor:default}
+#grid tbody th{position:sticky;left:0;top:auto;z-index:2;min-width:48px;max-width:48px;padding:6px 4px;text-align:center;color:var(--sub);font-weight:400;background:var(--bg);cursor:pointer}
+#grid thead th.sc{background:var(--accent);color:var(--accent-ink)}
+#grid thead th.sc b{color:var(--accent-ink)}
+#grid tr.hr td{position:sticky;top:44px;z-index:2;font-weight:700;background:var(--bg)}
+#grid td.col{background:var(--sel)}
+#grid td.bad{background:var(--flag)}
+#grid td.bad::after{content:"";position:absolute;right:0;top:0;border-style:solid;border-width:0 12px 12px 0;border-color:transparent var(--mark) transparent transparent}
+#grid td.ch{background:var(--hl)}
+#grid td.cur{outline:3px solid var(--accent);outline-offset:-3px}
+#grid tr.rowbad th,#grid tr.rowsel th{color:var(--mark);font-weight:700}
+#grid td.r{text-align:right}
+.tabs{display:flex;border-bottom:2px solid var(--line);margin-top:12px}
+.tabs button{flex:1;font:inherit;border:0;border-bottom:4px solid transparent;margin-bottom:-2px;background:none;min-height:52px;color:var(--sub);padding:0 2px;cursor:pointer}
+.tabs button.on{color:var(--text);font-weight:700;border-bottom-color:var(--accent)}
+.panel{display:flex;flex-direction:column;gap:12px;padding-top:8px}
+.panel h2{margin:0;font-size:21px}
+.prow{display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.prow .t{flex:1 1 240px;min-width:0}
+.prow .t b{display:block}
+.prow .t span{color:var(--sub);font-size:16px;overflow-wrap:anywhere}
+.prow .bt{display:flex;gap:6px;flex-wrap:wrap}
+.vals label{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);min-height:48px;cursor:pointer}
+.vals input[type=checkbox]{width:24px;height:24px;accent-color:var(--accent)}
+.vals .n{margin-left:auto;color:var(--sub)}
+.vals .vv{overflow-wrap:anywhere}
+.vscr{max-height:340px;overflow:auto;border:1px solid var(--line);padding:0 12px}
+.log{margin:0;padding-left:26px}.log li{padding:6px 0;border-bottom:1px solid var(--line)}
+.dim{color:var(--sub);margin:0}
+.nxt{display:flex;justify-content:flex-end;margin-top:16px}
+.more{display:flex;justify-content:center;margin:8px 0}
+.dl{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.pick tr{cursor:pointer}.pick td,.pick th{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pick tr.pk td,.pick tr.pk th{background:var(--sel);font-weight:700;color:var(--text)}
+.pick tr.skip td,.pick tr.skip th{color:var(--sub);text-decoration:line-through;opacity:.6}
+.pick th{width:48px;text-align:center;position:static}
+.dtl{margin-top:6px}.dtl summary{cursor:pointer;color:var(--sub);padding:6px 0}
+.imp{margin:8px 0}.imp textarea{min-height:80px;font-size:16px}
+.rbox h3{margin:14px 0 6px}.rmsg{min-height:1.5em;margin:4px 0}
 </style>
-<div class="wrap">
-<header class="top"><p class="step">앱 ① / 3</p><h1>엑셀 정리·집계 도우미</h1><p class="lead">지저분한 엑셀 표를 올리면 → 자동으로, 내 손으로, AI와 함께 고치고 → 합계까지 내 줍니다.</p></header>
-<div id="subtabs" role="tablist"></div>
+<div class="wrap app">
+<div class="bar"><span class="nm" id="fname">① 엑셀 정리·집계 도우미</span><button id="undo" disabled>↶ 되돌리기</button><button id="redo" disabled>↷ 다시</button></div>
+<ol class="stp" id="stp"></ol>
+<p class="msg2" id="msg2" role="status"></p>
 
-<!-- ===== [구역 1] 표 올리기 ===== -->
-<section class="sub">
-<h2>표 올리기</h2><p class="why">매달 쓰는 엑셀 파일을 그대로 올리세요. 첫 줄은 제목 줄이어야 해요.</p>
+<!-- ===== ① 파일 올리기 ===== -->
+<section id="v1">
+<h2>① 파일 올리기</h2><p class="why">매달 쓰는 엑셀 파일을 그대로 올리세요. 표 위에 제목이나 작성자 줄이 있어도 괜찮아요. 칸 이름이 있는 줄을 같이 고르게 해 드려요. 원본 파일은 절대 바뀌지 않아요.</p>
+<div id="rcsel"></div>
 <div class="drop" id="drop" tabindex="0" role="button" aria-label="엑셀 파일 올리기">
   <big>엑셀 파일을 여기로 끌어다 놓으세요</big>
   <small>또는 이 칸을 눌러 파일 고르기 (.xlsx · .csv) · 파일은 내 컴퓨터 밖으로 나가지 않아요</small>
@@ -118,68 +181,47 @@ details.more{margin:10px 0}details.more summary{cursor:pointer;color:var(--sub);
 <div class="or">연습용 자료로 해 보기</div>
 <div class="samples" id="samples"><button class="btn2" data-s="sales">매출 (수출입)</button><button class="btn2" data-s="purchase">구매</button><button class="btn2" data-s="defect">생산·불량</button></div>
 
-<div id="preview" hidden>
-<h3>이렇게 읽었어요 <span class="cap">(위에서 6줄만 보여 드려요)</span></h3>
-<p class="cap">제목 아래 칸은 앱이 짐작한 <b>열 종류</b>예요. 틀렸으면 눌러서 바꾸세요. (날짜 / 숫자 / 글자)</p>
-<div id="ptable"></div>
-</div>
 </section>
 
-<!-- ===== [구역 2] 자동으로 고치기 ===== -->
-<section class="sub">
-<h2>자동으로 고치기</h2><p class="why">흔한 지저분함을 앱이 찾아서 고쳐요. 이 파일에서 찾은 것만 보여 드려요. 스위치를 끄고 켜 보세요. 노란 칸에 마우스를 올리면 원래 모양이 보여요.</p>
-<div id="rules"></div>
-<div id="diffbox"></div>
-<div id="ctable"></div>
+<!-- ===== 제목 줄 고르기 ===== -->
+<section id="vh" hidden>
+<h2>칸 이름이 있는 줄을 골라 주세요</h2>
+<p class="why" id="hdrwhy"></p>
+<div class="tablebox pick" id="hdrtbl"></div>
+<p class="cap" id="hdrcap"></p>
+<div class="dl"><button class="b go" data-a="hdrgo">이 줄로 시작하기</button><button class="b" data-a="hdrcancel">그대로 두기</button></div>
 </section>
 
-<!-- ===== [구역 3] 직접 고치기 ===== -->
-<section class="sub">
-<h2>내 손으로 고치기</h2><p class="why">자동으로 못 잡은 것은 직접 고쳐요. 고친 건 모두 기록되고, 언제든 되돌릴 수 있어요.</p>
-<div class="row"><button class="btn2" id="undo">↶ 되돌리기</button><button class="lnk" id="undoall">모두 되돌리기</button><span class="cap" id="opsinfo"></span></div>
-<h3>① 칸을 눌러 바로 고치기 <span class="cap">(고친 뒤 다른 곳을 누르면 저장돼요 · ✕는 줄 지우기)</span></h3>
-<div id="etable"></div>
-<h3>② 같은 뜻인데 다르게 쓴 값 하나로 합치기</h3>
-<div id="vbox"></div>
-<h3>③ 글자를 찾아서 바꾸기</h3>
-<div id="rbox"></div>
+<!-- ===== ② 고치기 ===== -->
+<section id="v2" hidden>
+<div class="tools" id="tools"></div>
+<div class="fxbar"><div class="nb" id="nb">A1</div><div class="fxl">fx</div><input id="fx" aria-label="칸 내용 고치기" enterkeyhint="done"></div>
+<div class="info" id="info"></div>
+<div id="fixline"></div>
+<div id="grid"></div>
+<div class="more" id="more"></div>
+<div class="tabs" id="tabs"></div>
+<div class="panel" id="panel"></div>
+<div class="nxt"><button class="b go" data-a="step" data-n="3">다음: 결과 받기 →</button></div>
 </section>
 
-<!-- ===== [구역 4] AI로 고치기 ===== -->
-<section class="sub">
-<h2>AI와 함께 고치기</h2><p class="why">① 고치고 싶은 점을 적으면 → ② 앱이 AI에게 보낼 질문을 만들어 줘요 → ③ AI가 준 "바꾸기 목록"을 붙여넣으면 → ④ 미리 보고 적용해요.<br>AI는 표를 다시 쓰지 않고 <b>바꿀 목록만</b> 답해요. 그래서 숫자가 몰래 바뀔 걱정이 없어요.</p>
-<label class="fld"><span>고치고 싶은 점 (말로 적으세요. 비워 두면 AI가 이상한 값을 알아서 찾아요)</span><textarea id="aigoal" style="min-height:90px" placeholder="예: 거래처 이름 뒤의 (주)를 빼고 싶어요 / 금액에 '약 5만' 같은 글자가 섞여 있어요"></textarea></label>
-<h3>이름 가려서 보내기</h3>
-<p class="cap">AI에게 값 목록이 같이 나가요. 거래처·사람 이름 열은 A, B로 바꿔서 보내고, 답이 오면 앱이 원래대로 되돌려요.</p>
-<div class="seg" id="aimask"></div>
-<h3>AI에게 보낼 질문</h3>
-<div class="promptbox"><textarea id="aiprompt" readonly aria-label="AI에게 보낼 질문"></textarea></div>
-<div class="row"><button class="btn" id="aicp">질문 복사하기</button><span class="flash" id="aifl"></span></div>
-<div class="ai"><a href="https://chatgpt.com/" target="_blank" rel="noopener">ChatGPT 열기<small>붙여넣고 엔터</small></a><a href="https://gemini.google.com/" target="_blank" rel="noopener">Gemini 열기<small>붙여넣고 엔터</small></a></div>
-<h3>AI가 준 바꾸기 목록 붙여넣기</h3>
-<textarea class="big" id="aians" style="min-height:140px" placeholder="열 이름 | 원래 값 | 바꿀 값  ← 이런 줄들을 그대로 붙여넣으세요"></textarea>
-<div id="aiprev"></div>
-<div class="row"><button class="btn" id="aiapply" disabled>이대로 적용하기</button><button class="btn2" id="aiundo">↶ 되돌리기</button><span class="flash" id="aimsg"></span></div>
-</section>
-
-<!-- ===== [구역 5] 합계 내기 ===== -->
-<section class="sub">
-<h2>합계 내기</h2><p class="why">골라서 맞추면 자동으로 계산돼요. 엑셀 함수는 필요 없어요.</p>
+<!-- ===== ③ 결과 받기 ===== -->
+<section id="v3" hidden>
+<h2>③ 결과 받기</h2>
+<div id="sumline"></div>
+<h3>합계 내기</h3>
+<p class="why">골라서 맞추면 자동으로 계산돼요. 엑셀 함수는 필요 없어요.</p>
 <div id="actl"></div>
 <div id="aout"></div>
 <h3>그림으로 보기</h3>
 <div class="seg" id="kind"><label><input type="radio" name="k" value="bar" checked><span>세로 막대</span></label><label><input type="radio" name="k" value="hbar"><span>가로 막대</span></label><label><input type="radio" name="k" value="line"><span>꺾은선</span></label></div>
 <div id="achart"></div>
+<div id="rcres"></div>
+<h3>저장하기</h3>
+<div class="dl"><button class="b go" id="dl1">정리된 표 받기 (.csv)</button><button class="b" id="dl2">합계표 받기 (.csv)</button><button class="b" id="cp1">정리된 표 복사 (엑셀에 붙이기)</button><button class="b" id="cp2">합계표 복사</button><span class="flash" id="fl"></span></div>
+<div class="callout ok"><b>다음 달엔?</b> 위에서 [저장하기]로 정리 방법을 저장해 두고, 다음 달 ① 올리기에서 그 방법을 고르면 같은 정리와 합계가 한 번에 돼요. 받은 .csv는 엑셀에서 더블클릭하면 열리고, 다음 앱(② 분석·시각화, ③ 보고서)에서 그대로 올릴 수 있어요.</div>
+<div class="nxt" style="justify-content:flex-start"><button class="b" data-a="step" data-n="2">← 고치기로 돌아가기</button></div>
 </section>
-
-<!-- ===== [구역 6] 저장 ===== -->
-<section class="sub">
-<h2>저장하고 다음 앱으로</h2><p class="why">정리된 표를 파일로 받아 두면, 다음 앱(분석·보고서)에서 그대로 올릴 수 있어요.</p>
-<div class="row"><button class="btn" id="dl1">정리된 표 받기 (.csv)</button><button class="btn2" id="dl2">합계표 받기 (.csv)</button><button class="btn2" id="cp2">합계표 복사 (엑셀에 붙이기)</button><span class="flash" id="fl"></span></div>
-<div class="callout ok"><b>다음 달엔?</b> 새 엑셀 파일만 올리면 같은 규칙으로 바로 정리돼요. (직접·AI로 고친 건 파일마다 새로 해요)</div>
-<p>받은 .csv 파일은 엑셀에서 더블클릭하면 열려요. 다음 앱: <b>② 분석·시각화 앱</b>, <b>③ 보고서 앱</b>에서 이 파일을 올리세요.</p>
-</section>
-<div id="nav"></div>
 </div>
 <div id="tip"></div><script>/* 에스앤씨 샘플 데이터 (에스앤씨_샘플데이터_참가자용.xlsx 에서 그대로 복사한 모양) */
 window.SNC_RAW = {
@@ -464,7 +506,7 @@ const U = (function(){
   function attachLoader(o){
     let sheets=[]; const drop=$(o.drop), file=$(o.file), sel=$(o.sheet), msg=$(o.msg);
     const say=(t,bad)=>{ msg.textContent=t; msg.className = bad?'warn':'hint'; };
-    const use=i=>{ const t=toTable(sheets[i].rows); if(!t){ say('표를 찾지 못했어요. 첫 줄(제목 줄)까지 있는 표인지 확인해 주세요.',true); return; } say(`"${sheets[i].name}" 시트에서 ${t.rows.length}줄을 읽었어요.`); o.onTable(t, sheets[i].name); };
+    const use=i=>{ const t=toTable(sheets[i].rows); if(!t){ say('표를 찾지 못했어요. 첫 줄(제목 줄)까지 있는 표인지 확인해 주세요.',true); return; } say(`"${sheets[i].name}" 시트에서 ${t.rows.length}줄을 읽었어요.`); o.onTable(t, sheets[i].name, sheets[i].rows); };
     const handle=async f=>{ if(!f) return; say('읽는 중…'); try{ sheets=await readFile(f); sheets=sheets.filter(s=>s.rows.length); if(!sheets.length) throw new Error('내용이 비어 있어요'); sel.innerHTML=sheets.map((s,i)=>`<option value="${i}">${esc(s.name)}</option>`).join(''); sel.closest('.fld').hidden = sheets.length<2; use(0); }catch(e){ say(e.message||'파일을 읽지 못했어요',true); } };
     file.onchange=()=>handle(file.files[0]);
     sel.onchange=()=>use(+sel.value);
@@ -519,136 +561,321 @@ const U = (function(){
 </script><script>
 (function(){const {$,$$,esc,fmt}=U;
 /* ===== [구역 A] 앱이 기억하는 것 ===== */
-let T=null,types=[],opts=Object.assign({},U.ALL_ON),fl=null,full=null,ops=[],gid=0,cfg=null,kind='bar',fname='표';
-let vcol=0,ventries=[],vtouched=false,aiMask=new Set(),aiMap={},aiItems=[];
-const st=U.stepper(['표 올리기','자동 고치기','내 손으로','AI로 고치기','합계 내기','저장'],i=>{ if(i>0&&!T){ st.show(0); U.flash($('#msg'),'먼저 표를 올려 주세요'); return;} const f={1:renderAuto,2:renderManual,3:renderAI,4:renderAgg}[i]; if(f) f(); });
-U.tipInit();
-const vis=s=>{ s=String(s); return s===''?'(빈칸)':s.replace(/^[  　]+|[  　]+$/g,m=>'␣'.repeat(m.length)).replace(/​/g,'␣'); };
-const nameCol=h=>/거래처|공급처|업체|고객|회사|바이어|담당|이름|성명/.test(h);
+const DATE_HEAD=/일자|날짜|일시|date|납기|출고일|입고일/i;
+const LIM_STEP=300;
+const KEY='snc_app1_recipes_v1';
+function loadR(){try{const a=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return[]}}
+function persistR(){try{localStorage.setItem(KEY,JSON.stringify(RC));return true}catch(e){return false}}
+let RC=loadR(),chosenId='',pendingAgg=null,rname='',armDel=null,pend=null,pickIdx=0,hdrIdx=0;
+let D=null,over=[],undo=[],redo=[],log=[],changed=new Set(),sel={r:1,c:0},tab='prob',lim=LIM_STEP,
+    ui={checked:new Set(),target:'',find:'',repl:'',scope:'col'},A=null,fname='표',origRows=0,cfg=null,cfgSig='',kind='bar',step=1,aggCt=null,aggA=null;
+const ws=v=>String(v).replace(/[ ​　]/g,' ').replace(/\s+/g,' ').trim();
+const clone=a=>a.map(r=>r.slice());
+const L=c=>{let s='',n=c+1;while(n>0){const r=(n-1)%26;s=String.fromCharCode(65+r)+s;n=Math.floor((n-1)/26)}return s};
+const ref=(r,c)=>L(c)+(r+1);
+const vis=s=>{s=String(s);return s===''?'(빈칸)':s.replace(/^[ \u00a0\u3000]+|[ \u00a0\u3000]+$/g,m=>'␣'.repeat(m.length))};
+const isBlankRow=r=>r.every(v=>ws(v)==='');
+const KIND={trim:'앞뒤나 글자 사이에 보이지 않는 빈칸이 있어요',date:'날짜가 여러 모양이에요',num:'숫자에 글자나 쉼표가 붙어 있어요',same:'같은 값인데 띄어쓰기·대소문자가 달라요',sim:'같은 뜻 같은데 다르게 적었어요',bad:'칸 종류와 안 맞는 값이 있어요'};
+const FIXABLE=['trim','date','num','same'];
+const toast=t=>{$('#msg2').textContent=t||''};
 
-/* ===== [구역 B] 표 올리기 ===== */
-function setTable(t,name){ T=t; fname=(name||'표').replace(/\.[^.]+$/,''); types=U.detectTypes(t); cfg=U.pickDefaults(t,types); opts=Object.assign({},U.ALL_ON); ops=[]; gid=0; fl=null; vcol=Math.max(types.indexOf('text'),0); aiMask=new Set(); t.header.forEach((h,i)=>{ if(types[i]==='text'&&nameCol(h)) aiMask.add(i); }); $('#aians').value=''; 
-  $('#preview').hidden=false; U.previewTable($('#ptable'),t,types,()=>{cfg=U.pickDefaults(T,types);}); }
-U.attachLoader({drop:'#drop',file:'#file',sheet:'#sheet',msg:'#msg',paste:'#paste',onTable:setTable});
-$$('#samples button').forEach(b=>b.onclick=()=>{ const t=U.toTable(U.parseDelim(window.SNC_RAW[b.dataset.s])); $('#msg').textContent='연습용 자료를 불러왔어요 ('+t.rows.length+'줄)'; $('#msg').className='hint'; setTable(t,b.textContent); });
-
-/* ===== [구역 C] 고친 결과 만들기 (자동 규칙 → 내가 고친 기록 순서로 적용) ===== */
-function buildFinal(){
-  const cl=U.clean(T,types,opts); full=U.clean(T,types,U.ALL_ON);
-  const rows=cl.rows.map(r=>({dup:r.dup,del:false,cells:r.cells.map(c=>({v:c.v,raw:c.raw,kinds:c.kinds.slice()}))}));
-  const hit=(c,o)=>o.loose?c.v.trim()===o.from:c.v===o.from;
-  ops.forEach(o=>{
-    if(o.t==='cell'){ const c=rows[o.r].cells[o.c]; if(c.v!==o.v){ c.v=o.v; c.kinds.push('edit'); } }
-    else if(o.t==='map'){ rows.forEach(r=>{ const c=r.cells[o.c]; if(hit(c,o)){ c.v=o.to; c.kinds.push('edit'); } }); }
-    else if(o.t==='rep'){ rows.forEach(r=>r.cells.forEach((c,ci)=>{ if((o.c<0||o.c===ci)&&c.v.includes(o.from)){ c.v=c.v.split(o.from).join(o.to); c.kinds.push('edit'); } })); }
-    else if(o.t==='del'){ rows[o.r].dup=true; rows[o.r].del=true; }
-    else if(o.t==='delval'){ rows.forEach(r=>{ if(hit(r.cells[o.c],o)){ r.dup=true; r.del=true; } }); }
-  });
-  fl={header:T.header,types,rows,counts:cl.counts,kept:rows.filter(r=>!r.dup).length,total:rows.length};
+/* ===== [구역 B] 표 분석: 칸 종류 알아맞히기 + 이상한 칸 찾기 ===== */
+function typesNow(){const rows=D.slice(1).filter(r=>!isBlankRow(r));const base=rows.length?U.detectTypes({header:D[0],rows}):D[0].map(()=> 'text');return base.map((x,i)=>over[i]||x)}
+function analyze(){
+  const nc=D[0].length,types=typesNow(),flags=new Map(),colCount=new Array(nc).fill(0);
+  const put=(r,c,f)=>{flags.set(r+','+c,f);colCount[c]++};
+  const rowsN=D.length-1;
+  for(let c=0;c<nc;c++){
+    const cnt=new Map();
+    for(let r=1;r<D.length;r++){
+      const raw=D[r][c],v=ws(raw);if(v==='')continue;
+      if(types[c]==='date'){const d=U.parseDate(v,true);
+        if(d){if(d!==v)put(r,c,{kind:'date',to:d,from:raw});else if(v!==raw)put(r,c,{kind:'trim',to:v,from:raw})}
+        else put(r,c,v!==raw?{kind:'trim',to:v,from:raw}:{kind:'bad',to:null,from:raw});continue}
+      if(types[c]==='num'){const n=U.parseNum(v);
+        if(!isNaN(n)){const s=String(n);if(s!==v)put(r,c,{kind:'num',to:s,from:raw});else if(v!==raw)put(r,c,{kind:'trim',to:v,from:raw})}
+        else put(r,c,v!==raw?{kind:'trim',to:v,from:raw}:{kind:'bad',to:null,from:raw});continue}
+      cnt.set(v,(cnt.get(v)||0)+1);
+      if(v!==raw)put(r,c,{kind:'trim',to:v,from:raw});
+    }
+    if(types[c]!=='text'||!cnt.size)continue;
+    if(!(cnt.size<=30||cnt.size<=rowsN*0.5))continue;
+    const key=v=>v.normalize('NFKC').toLowerCase().replace(/\(주\)|㈜|주식회사|\(유\)|유한회사/g,'').replace(/[\s\-_.,·()]/g,'');
+    const groups=new Map();cnt.forEach((n,v)=>{const k=key(v);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(v)});
+    const canon=new Map();
+    groups.forEach(vs=>{if(vs.length>1){let best=vs[0];vs.forEach(v=>{if(cnt.get(v)>cnt.get(best)||(cnt.get(v)===cnt.get(best)&&v.length<best.length))best=v});vs.forEach(v=>{if(v!==best)canon.set(v,{to:best,kind:'same'})})}});
+    const reps=[...cnt.keys()].filter(v=>!canon.has(v));
+    reps.forEach(a=>{let best=null;reps.forEach(b=>{if(b!==a&&b.length>=2&&a.startsWith(b)&&a.length-b.length<=3&&cnt.get(b)>=cnt.get(a)){if(!best||cnt.get(b)>cnt.get(best)||(cnt.get(b)===cnt.get(best)&&b.length<best.length))best=b}});if(best)canon.set(a,{to:best,kind:'sim'})});
+    for(let r=1;r<D.length;r++){const k=r+','+c;if(flags.has(k))continue;const v=ws(D[r][c]);const m=canon.get(v);if(m)put(r,c,{kind:m.kind,to:m.to,from:D[r][c]})}
+  }
+  const empty=[],dup=[],seen=new Set();
+  for(let r=1;r<D.length;r++){if(isBlankRow(D[r])){empty.push(r);continue}const k=D[r].map(ws).join('\u0001');if(seen.has(k))dup.push(r);else seen.add(k)}
+  return{flags,types,empty,dup,colCount};
 }
-function redetect(cols){ const tmp={header:T.header,rows:fl.rows.filter(r=>!r.dup).map(r=>r.cells.map(c=>c.v))}; const t2=U.detectTypes(tmp); const ch=[]; cols.forEach(c=>{ if(types[c]!==t2[c]){ ch.push(`「${T.header[c]}」 ${U.TYPE_LABEL[types[c]]}→${U.TYPE_LABEL[t2[c]]}`); types[c]=t2[c]; } }); if(ch.length){ cfg=U.pickDefaults(T,types); buildFinal(); } return ch; }
-function push(o){ o.g=o.g||++gid; ops.push(o); }
-function undo(){ if(!ops.length) return; const g=ops[ops.length-1].g; while(ops.length&&ops[ops.length-1].g===g) ops.pop(); }
-function opDesc(o){ const h=o.c>=0?T.header[o.c]:'모든 열'; return o.t==='cell'?`「${h}」 칸 직접 고침`:o.t==='map'?`「${h}」 '${o.from}' → '${o.to}'`:o.t==='rep'?`「${h}」 '${o.from}' → '${o.to}' 바꾸기`:o.t==='del'?'줄 하나 지움':`「${h}」 '${o.from}' 줄 지움`; }
-const entriesOf=c=>{ const m=new Map(); fl.rows.forEach(r=>{ if(r.dup) return; const v=r.cells[c].v; m.set(v,(m.get(v)||0)+1); }); const key=v=>v.normalize('NFKC').toLowerCase().replace(/\(주\)|㈜|주식회사|\(유\)|유한회사/g,'').replace(/[\s\-_.,·()]/g,''); return [...m].map(([v,n])=>({v,n,k:key(v)})).sort((a,b)=>a.k<b.k?-1:a.k>b.k?1:b.n-a.n); };
 
-/* ===== [구역 D] 자동으로 고치기 화면 ===== */
-const NOTE={trim:'앞뒤나 글자 사이에 보이지 않는 빈칸이 붙은 값은 다른 값으로 세어져요.',date:'날짜가 여러 모양(2026.07.08 / 2026-07-08 / 엑셀 숫자)으로 섞이면 월별로 못 묶어요.',num:'숫자 뒤에 붙은 "원"·"개"나 쉼표 때문에 합계에 못 들어가는 값이 있어요.',same:'띄어쓰기·대소문자만 다른 같은 값은 하나로 합쳐요.',dup:'완전히 똑같은 줄이 두 번 들어 있으면 합계가 부풀어요.'};
-function found(k){ const seen=new Set(),out=[];
-  if(k==='dup'){ full.rows.forEach(r=>{ if(r.dup&&out.length<2) out.push('<code>'+esc(r.cells.slice(0,3).map(c=>c.v).join(' · '))+'</code>'); }); return out.join(', '); }
-  full.rows.forEach(r=>r.cells.forEach(c=>{ if(c.kinds.includes(k)&&out.length<3&&!seen.has(c.raw)){ seen.add(c.raw); out.push(`<code>${esc(vis(c.raw))}</code> → <code>${esc(vis(c.v))}</code>`); } })); return out.join(', '); }
-function ruleHTML(k){ const n=full.counts[k]; return `<label class="rule"><input type="checkbox" data-k="${k}" ${opts[k]?'checked':''}><span class="sw"></span><span class="t">${U.RULES[k]}<span class="n">${NOTE[k]}${n?`<span class="found">이 파일에서 찾은 것 (${n}${k==='dup'?'줄':'곳'}): ${found(k)}</span>`:''}</span></span></label>`; }
-function renderAuto(){ buildFinal(); const ks=Object.keys(U.RULES), yes=ks.filter(k=>full.counts[k]>0), no=ks.filter(k=>!full.counts[k]);
-  $('#rules').innerHTML=(yes.length?yes.map(ruleHTML).join(''):'<div class="callout ok">이 표에서는 자동으로 찾을 지저분한 곳이 없었어요. 다음 단계에서 직접 확인해 보세요.</div>')+(no.length?`<details class="more"><summary>이 표엔 해당 없는 규칙 ${no.length}개 (눌러서 보기)</summary>${no.map(ruleHTML).join('')}</details>`:'');
-  $$('#rules input').forEach(x=>x.onchange=()=>{ opts[x.dataset.k]=x.checked; const o=document.querySelector('#rules details')?.open; renderAuto(); if(o) $('#rules details').open=true; showDiff(x.dataset.k); });
-  if(!$('#diffbox').dataset.k) $('#diffbox').innerHTML='<span class="cap">스위치를 바꾸면 합계가 어떻게 달라지는지 여기에 보여 드려요.</span>';
-  $('#ctable').innerHTML=`<div class="stats"><div><div class="big-num">${fl.kept}줄</div><div class="big-lab">남은 줄 (전체 ${fl.total}줄)</div></div></div><div style="margin-top:10px"></div>`+U.cleanedTableHTML(fl); }
-function showDiff(k){ const box=$('#diffbox'); box.dataset.k=k;
-  if(k==='date'){ const di=types.indexOf('date'); if(di<0){box.innerHTML='이 표엔 날짜 열이 없어요.';return;} const n=o=>new Set(U.clean(T,types,o).rows.filter(r=>!r.dup).map(r=>{const v=r.cells[di].v; return U.parseDate(v,true)?U.parseDate(v,true).slice(0,7):v;})).size; const o2=Object.assign({},opts,{date:!opts.date}); box.innerHTML=`<b>날짜 모양 맞추기</b> ${opts.date?'켰더니':'껐더니'}<br>월별로 묶으면 <b>${n(opts)}묶음</b>이 돼요 (${opts.date?'끄면':'켜면'} ${n(o2)}묶음).`; return; }
-  const ni=types.map((x,i)=>x==='num'?i:-1).filter(i=>i>=0); if(!ni.length){box.innerHTML='';return;}
-  const col=ni.find(i=>/금액|매출/.test(T.header[i]))??ni[ni.length-1]; const other=Object.assign({},opts,{[k]:!opts[k]}); const a=U.colSum(U.clean(T,types,opts),col), b=U.colSum(U.clean(T,types,other),col); const on=opts[k], d=a-b;
-  box.innerHTML=`<b>"${U.RULES[k]}"</b> ${on?'켰더니':'껐더니'}<br>「${esc(T.header[col])}」 합계가 <b>${fmt(a)}</b> ${d===0?'— 이 규칙은 합계를 바꾸지 않아요.':`(${on?'끌 때':'켤 때'} ${fmt(b)}, 차이 <b>${fmt(Math.abs(d))}</b>)`}`; }
+/* ===== [구역 C] 고치는 동작과 되돌리기 ===== */
+const eqD=(a,b)=>a.length===b.length&&a.every((r,i)=>r.length===b[i].length&&r.every((v,j)=>v===b[i][j]));
+function act(label,fn,op){
+  const before=clone(D),ob=over.slice();changed=new Set();fn();
+  if(eqD(before,D)&&JSON.stringify(ob)===JSON.stringify(over)){toast('고칠 곳이 없어요.');renderAll();return false}
+  undo.push({d:before,over:ob,label,op});if(undo.length>60)undo.shift();redo=[];log.push({label,op});toast('했어요: '+label);fixSel();renderAll();return true;
+}
+function fixSel(){sel.r=Math.min(Math.max(sel.r,0),D.length-1);sel.c=Math.min(sel.c,D[0].length-1)}
+function doUndo(){const it=undo.pop();if(!it)return;redo.push({d:clone(D),over:over.slice(),label:it.label,op:it.op});D=it.d;over=it.over;log.pop();changed=new Set();toast('되돌렸어요: '+it.label);fixSel();renderAll()}
+function doRedo(){const it=redo.pop();if(!it)return;undo.push({d:clone(D),over:over.slice(),label:it.label,op:it.op});D=it.d;over=it.over;log.push({label:it.label,op:it.op});changed=new Set();toast('다시 했어요: '+it.label);fixSel();renderAll()}
+function fixKinds(kinds,col){const an=analyze();an.flags.forEach((f,k)=>{const[r,c]=k.split(',').map(Number);if(f.to!=null&&kinds.includes(f.kind)&&(col==null||col===c)){D[r][c]=f.to;changed.add(k)}})}
+function delRows(list){const s=new Set(list);D=D.filter((r,i)=>i===0||!s.has(i));changed=new Set()}
+function fillDown(c){for(let r=2;r<D.length;r++){if(ws(D[r][c])===''&&!isBlankRow(D[r])&&ws(D[r-1][c])!==''){D[r][c]=D[r-1][c];changed.add(r+','+c)}}}
+function delCol(c){D=D.map(r=>r.filter((_,i)=>i!==c));over.splice(c,1);changed=new Set();cfg=null}
+const colIdx=n=>D[0].findIndex(h=>ws(h)===ws(n));
+const run=(label,op)=>act(label,()=>applyOp(op),op);
+/* 되풀이할 수 있는 일(정리 방법에 저장되는 것)은 모두 여기서 실행해요. 칸은 번호가 아니라 제목으로 찾아요. */
+function applyOp(o){
+  const c=o.col!=null?colIdx(o.col):-1;if(o.col!=null&&c<0)return false;
+  if(o.t==='auto'){for(let i=0;i<3;i++){const b=clone(D);fixKinds(FIXABLE);if(eqD(b,D))break}}
+  else if(o.t==='kind')fixKinds([o.kind]);
+  else if(o.t==='trim'){for(let r=1;r<D.length;r++){const v=ws(D[r][c]);if(D[r][c]!==v){D[r][c]=v;changed.add(r+','+c)}}}
+  else if(o.t==='date')fixKinds(['date','trim'],c);
+  else if(o.t==='num')fixKinds(['num','trim'],c);
+  else if(o.t==='fill')fillDown(c);
+  else if(o.t==='empty')delRows(analyze().empty);
+  else if(o.t==='dup')delRows(analyze().dup);
+  else if(o.t==='delcol')delCol(c);
+  else if(o.t==='map'){const set=new Set(o.from.map(ws));for(let r=1;r<D.length;r++){if(set.has(ws(D[r][c]))&&D[r][c]!==o.to){D[r][c]=o.to;changed.add(r+','+c)}}}
+  else if(o.t==='rep'){for(let r=1;r<D.length;r++)for(let k=0;k<D[r].length;k++){if((c<0||k===c)&&D[r][k].includes(o.find)){D[r][k]=D[r][k].split(o.find).join(o.repl);changed.add(r+','+k)}}}
+  else if(o.t==='type')over[c]=o.type;
+  return true}
+function tool(k){const c=sel.c,h=D[0][c],nm=`${L(c)}칸 「${h}」`,an=analyze();
+  if(k==='all')run('추천대로 모두 고치기',{t:'auto'});
+  else if(k==='trim')run(`${nm} 빈칸 지우기`,{t:'trim',col:h});
+  else if(k==='date'){if(an.types[c]!=='date'){toast(`${L(c)}칸은 날짜 칸으로 읽히지 않아요. 아래 [읽는 종류]를 날짜로 바꿔 보세요.`);return}run(`${nm} 날짜 맞추기`,{t:'date',col:h})}
+  else if(k==='num'){if(an.types[c]!=='num'){toast(`${L(c)}칸은 숫자 칸으로 읽히지 않아요. 아래 [읽는 종류]를 숫자로 바꿔 보세요.`);return}run(`${nm} 숫자만 남기기`,{t:'num',col:h})}
+  else if(k==='fill')run(`${nm} 빈칸을 위 값으로 채우기`,{t:'fill',col:h});
+  else if(k==='empty'){if(!an.empty.length){toast('빈 줄이 없어요.');return}run('빈 줄 지우기',{t:'empty'})}
+  else if(k==='dup'){if(!an.dup.length){toast('똑같은 줄이 없어요.');return}run('같은 줄 지우기',{t:'dup'})}
+  else if(k==='row'){if(sel.r<1){toast('제목 줄은 지울 수 없어요. 아래 줄의 번호를 눌러 주세요.');return}act(`${sel.r+1}번 줄 지우기`,()=>delRows([sel.r]))}
+  else if(k==='repick'){if(!pend){toast('먼저 파일을 올려 주세요.');return}pickIdx=hdrIdx;renderPicker();go('h')}
+  else if(k==='col'){if(D[0].length<2){toast('마지막 칸은 지울 수 없어요.');return}run(`${nm} 지우기`,{t:'delcol',col:h})}}
+const TOOLS=[['all','추천대로 모두 고치기',1],['trim','빈칸 지우기'],['date','날짜 맞추기'],['num','숫자만 남기기'],['fill','위 값으로 채우기'],['empty','빈 줄 지우기'],['dup','같은 줄 지우기'],['row','이 줄 지우기'],['col','이 칸 지우기'],['repick','제목 줄 다시 고르기']];
 
-/* ===== [구역 E] 내 손으로 고치기 화면 ===== */
-function renderManual(){ buildFinal();
-  $('#opsinfo').textContent=ops.length?`고친 기록 ${new Set(ops.map(o=>o.g)).size}건 · 마지막: ${opDesc(ops[ops.length-1])}`:'아직 고친 곳이 없어요.';
-  $('#undo').disabled=!ops.length; $('#undoall').hidden=!ops.length;
-  renderETable(); renderVBox(); renderRBox(); }
-function renderETable(){ const LIM=150, rows=fl.rows.slice(0,LIM);
-  let h=`<div class="tablebox"><table><thead><tr><th></th>${T.header.map((x,i)=>`<th class="${types[i]==='num'?'r':''}">${esc(x)}</th>`).join('')}</tr><tr class="typerow"><th></th>${types.map((ty,i)=>`<th><select data-t="${i}" aria-label="${esc(T.header[i])} 열 종류">${['date','num','text'].map(k=>`<option value="${k}" ${ty===k?'selected':''}>${U.TYPE_LABEL[k]}</option>`).join('')}</select></th>`).join('')}</tr></thead><tbody>`;
-  rows.forEach((r,ri)=>{ h+=`<tr class="${r.dup?'dup':''}"><td>${r.dup?'':`<button class="x" data-del="${ri}" title="이 줄 지우기" aria-label="${ri+1}번째 줄 지우기">✕</button>`}</td>`+r.cells.map((c,ci)=>{ const chg=c.kinds.length&&!r.dup; return `<td class="${types[ci]==='num'?'r':''} ${chg?'chg':''}" ${r.dup?'':'contenteditable="true" spellcheck="false"'} data-r="${ri}" data-c="${ci}" data-v="${esc(c.v)}" ${chg?`data-from="${esc(c.raw)}"`:''}>${esc(c.v)}</td>`; }).join('')+'</tr>'; });
-  $('#etable').innerHTML=h+'</tbody></table></div>'+(fl.rows.length>LIM?`<p class="cap">처음 ${LIM}줄만 보여 드려요. 나머지 줄도 아래 ②·③의 합치기·바꾸기는 똑같이 적용돼요.</p>`:''); }
-$('#etable').addEventListener('focusout',e=>{ const td=e.target.closest&&e.target.closest('td[data-c]'); if(!td) return; const v=td.textContent.trim(); if(v!==td.dataset.v){ push({t:'cell',r:+td.dataset.r,c:+td.dataset.c,v}); renderManual(); } });
-$('#etable').addEventListener('keydown',e=>{ if(e.key==='Enter'&&e.target.matches&&e.target.matches('td[contenteditable]')){ e.preventDefault(); e.target.blur(); } });
-$('#etable').addEventListener('click',e=>{ const b=e.target.closest('[data-del]'); if(b){ push({t:'del',r:+b.dataset.del}); renderManual(); } });
-$('#etable').addEventListener('change',e=>{ const s=e.target.closest('[data-t]'); if(s){ types[+s.dataset.t]=s.value; cfg=U.pickDefaults(T,types); renderManual(); } });
-$('#undo').onclick=()=>{ undo(); renderManual(); };
-$('#undoall').onclick=()=>{ ops=[]; renderManual(); };
-function renderVBox(){ ventries=entriesOf(vcol).slice(0,300); vtouched=false;
-  const groups=[]; ventries.forEach((e,i)=>{ const g=groups[groups.length-1]; if(g&&g.k===e.k) g.items.push(i); else groups.push({k:e.k,items:[i]}); });
-  const nsim=groups.filter(g=>g.items.length>1).length;
-  let h=`<label class="fld" style="max-width:320px"><span>어느 열의 값을 볼까요?</span><select id="vcol">${T.header.map((x,i)=>`<option value="${i}" ${i===vcol?'selected':''}>${esc(x)}</option>`).join('')}</select></label>`;
-  h+=`<p class="cap">${ventries.length}가지 값 · ${nsim?`<b>주황 막대</b>로 표시된 ${nsim}묶음은 띄어쓰기·(주) 등만 달라서 같은 값일 가능성이 커요.`:'비슷해 보이는 값 묶음은 없어요. 뜻이 같은 값은 직접 골라 합치세요.'}</p><div class="vscroll">`;
-  groups.forEach((g,gi)=>{ h+=`<div class="vgrp ${g.items.length>1?'sim':''}">`+g.items.map(i=>`<label class="vrow"><input type="checkbox" data-i="${i}"><span class="vv">${esc(vis(ventries[i].v))}</span><span class="cap">${ventries[i].n}개</span></label>`).join('')+(g.items.length>1?`<button class="lnk" data-merge="${gi}" style="padding:2px 0">이 묶음을 가장 많은 값으로 합치기</button>`:'')+'</div>'; });
-  h+=`</div><div class="row" style="margin-top:12px"><span>고른 값을</span><input type="text" id="vto" style="width:240px" placeholder="합칠 이름" aria-label="합칠 이름"><span>(으)로</span><button class="btn2" id="vgo" disabled>하나로 합치기</button></div>`;
-  const box=$('#vbox'); box.innerHTML=h; box._groups=groups;
-  $('#vcol').onchange=e=>{ vcol=+e.target.value; renderVBox(); };
-  $('#vto').oninput=()=>{ vtouched=true; upd(); };
-  $$('#vbox .vrow input').forEach(x=>x.onchange=()=>{ const ch=picked(); if(!vtouched&&ch.length){ $('#vto').value=ch.slice().sort((a,b)=>b.n-a.n)[0].v; } upd(); });
-  $('#vgo').onclick=()=>merge(picked().map(e=>e.v),$('#vto').value.trim());
-  $$('#vbox [data-merge]').forEach(b=>b.onclick=()=>{ const items=box._groups[+b.dataset.merge].items.map(i=>ventries[i]); const to=items.slice().sort((a,b)=>b.n-a.n)[0].v; merge(items.map(e=>e.v),to); });
-  function picked(){ return $$('#vbox .vrow input:checked').map(x=>ventries[+x.dataset.i]); }
-  function upd(){ $('#vgo').disabled=picked().length<1||$('#vto').value.trim()===''&&false; }
-  upd(); }
-function merge(froms,to){ const g=++gid; let n=0; froms.forEach(v=>{ if(v!==to){ push({t:'map',c:vcol,from:v,to,g}); n++; } }); if(n){ renderManual(); } }
-function renderRBox(){ $('#rbox').innerHTML=`<div class="flds"><label class="fld"><span>어느 열에서?</span><select id="rcol"><option value="-1">모든 열</option>${T.header.map((x,i)=>`<option value="${i}">${esc(x)}</option>`).join('')}</select></label><label class="fld"><span>찾을 글자</span><input type="text" id="rfind" placeholder="예: (주)"></label><label class="fld"><span>바꿀 글자 (지우려면 비워 두기)</span><input type="text" id="rto"></label></div><p class="cap" id="rcount">찾을 글자를 적어 보세요.</p><button class="btn2" id="rgo" disabled>바꾸기</button>`;
-  const cnt=()=>{ const f=$('#rfind').value, c=+$('#rcol').value; let n=0; if(f) fl.rows.forEach(r=>{ if(!r.dup) r.cells.forEach((x,ci)=>{ if((c<0||c===ci)&&x.v.includes(f)) n++; }); }); $('#rcount').textContent=f?`${n}곳에서 찾았어요.`:'찾을 글자를 적어 보세요.'; $('#rgo').disabled=!n; };
-  ['rfind','rcol'].forEach(id=>$('#'+id).oninput=$('#'+id).onchange=cnt);
-  $('#rgo').onclick=()=>{ push({t:'rep',c:+$('#rcol').value,from:$('#rfind').value,to:$('#rto').value}); renderManual(); }; }
+/* ===== [구역 D] 표 올리기 ===== */
+function setTable(t,name){
+  D=[t.header.slice()].concat(t.rows.map(r=>r.slice()));origRows=t.rows.length;over=[];undo=[];redo=[];log=[];changed=new Set();cfg=null;cfgSig='';lim=LIM_STEP;
+  fname=(name||'표').replace(/\.[^.]+$/,'');ui={checked:new Set(),target:'',find:'',repl:'',scope:'col'};tab='prob';
+  pendingAgg=null;const rc=RC.find(x=>String(x.id)===String(chosenId));sel={r:1,c:0};changed=new Set();const rmsg=rc?applyRecipe(rc):'';
+  const an=analyze(),first=[...an.flags.keys()][0];sel=first?{r:+first.split(',')[0],c:+first.split(',')[1]}:{r:1,c:0};
+  $('#fname').textContent=fname;go(2);toast(rmsg||`${origRows}줄을 읽었어요. 주황색 칸이 이상한 곳이에요.`);
+}
+U.attachLoader({drop:'#drop',file:'#file',sheet:'#sheet',msg:'#msg',paste:'#paste',onTable:(t,name,raw)=>offer(t,name,raw)});
+$('#file').addEventListener('click',e=>{e.target.value=''});/* 같은 파일을 다시 골라도 열리게 */
+$$('#samples button').forEach(b=>b.onclick=()=>{const raw=U.parseDelim(window.SNC_RAW[b.dataset.s]);offer(U.toTable(raw),b.textContent,raw)});
+/* 표 위에 제목·작성자 줄이 있으면 칸 이름 줄을 고르게 해요 */
+function guessHeader(rows){
+  const nz=r=>r.filter(v=>String(v).trim()!=='').length;
+  const maxW=Math.max(1,...rows.slice(0,60).map(nz));
+  for(let i=0;i<Math.min(rows.length,30);i++){
+    const r=rows[i],n=nz(r);if(maxW>=2&&n<2)continue;if(n<maxW*0.6)continue;
+    const cells=r.map(v=>String(v).trim()).filter(Boolean);
+    if(cells.filter(v=>isNaN(U.parseNum(v))&&!U.parseDate(v,false)).length/cells.length<0.8)continue;
+    if(new Set(cells).size<cells.length*0.8)continue;
+    if(i<rows.length-1&&!rows.slice(i+1,i+6).some(x=>nz(x)>=Math.max(1,n*0.5)))continue;
+    return i}
+  return 0}
+function offer(t,name,raw){
+  const rows=(raw||[]).filter(r=>r.some(c=>String(c).trim()!==''));
+  if(!rows.length){toast('내용이 비어 있어요.');return}
+  pend={name,rows};const gi=guessHeader(rows);
+  if(gi===0){const t0=U.toTable(rows);if(!t0){toast('표를 찾지 못했어요.');return}hdrIdx=0;setTable(t0,name)}
+  else{pickIdx=gi;renderPicker();go('h')}}
+function renderPicker(){
+  const rows=pend.rows.slice(0,40),mc=Math.min(8,Math.max(1,...rows.map(r=>r.length)));
+  $('#hdrwhy').textContent=(D&&log.length?'다시 고르면 지금까지 고친 일이 사라져요. ':'')+(pickIdx>0?`앱이 ${pickIdx+1}번째 줄을 칸 이름으로 골랐어요. 맞으면 아래 [이 줄로 시작하기]를 누르고, 틀렸으면 맞는 줄을 눌러 주세요. 초록색 줄 위의 ${pickIdx}줄은 표에서 빼요.`:'칸 이름이 있는 줄을 눌러 주세요. 초록색 줄 위의 줄은 표에서 빼요.');
+  $('#hdrtbl').innerHTML='<table><tbody>'+rows.map((r,i)=>`<tr class="${i<pickIdx?'skip':i===pickIdx?'pk':''}" data-a="hdr" data-i="${i}"><th>${i===pickIdx?'✓':i+1}</th>`+Array.from({length:mc},(_,c)=>`<td>${esc(r[c]==null?'':r[c])}</td>`).join('')+'</tr>').join('')+'</tbody></table>';
+  $('#hdrcap').textContent=`번호는 빈 줄을 뺀 순서예요.${pend.rows.length>40?` 처음 40줄만 보여요.`:''}`}
 
-/* ===== [구역 F] AI로 고치기 화면 ===== */
-function renderAI(){ buildFinal();
-  const tc=T.header.map((h,i)=>types[i]==='text'?i:-1).filter(i=>i>=0);
-  $('#aimask').innerHTML=tc.length?tc.map(i=>`<label><input type="checkbox" data-i="${i}" ${aiMask.has(i)?'checked':''}><span>${esc(T.header[i])} 가리기</span></label>`).join(''):'<span class="cap">글자 열이 없어요</span>';
-  $$('#aimask input').forEach(x=>x.onchange=()=>{ x.checked?aiMask.add(+x.dataset.i):aiMask.delete(+x.dataset.i); buildAIPrompt(); parseAI(); });
-  $('#aigoal').oninput=buildAIPrompt; buildAIPrompt(); parseAI(); $('#aiundo').disabled=!ops.length; }
-function buildAIPrompt(){ const g={}; aiMask.forEach(i=>g[T.header[i]]=entriesOf(i).map(e=>e.v)); aiMap=U.makeAliases(g);
-  const mv=(i,v)=>aiMask.has(i)&&aiMap[v]?aiMap[v]:v; let body='';
-  T.header.forEach((h,i)=>{ const es=entriesOf(i);
-    if(types[i]==='text'){ const show=es.slice(0,50); body+=`■ 「${h}」 (글자, 서로 다른 값 ${es.length}가지)\n  `+show.map(e=>`"${mv(i,e.v)}"(${e.n})`).join(', ')+(es.length>50?` … 외 ${es.length-50}가지`:'')+'\n\n'; }
-    else { const bad=es.filter(e=>e.v!==''&&(types[i]==='num'?isNaN(U.parseNum(e.v)):!U.parseDate(e.v,true))); const blank=es.find(e=>e.v==='');
-      body+=`■ 「${h}」 (${U.TYPE_LABEL[types[i]]}) — ${bad.length||blank?'이상한 값만 적었어요':'이상한 값 없음'}\n`+(bad.length?'  '+bad.slice(0,30).map(e=>`"${e.v}"(${e.n})`).join(', ')+'\n':'')+(blank?`  빈칸 ${blank.n}개\n`:'')+'\n'; } });
-  const goal=$('#aigoal').value.trim();
-  $('#aiprompt').value=`당신은 엑셀 표의 입력 실수와 표기 흔들림을 찾아 주는 꼼꼼한 도우미입니다.\n아래는 표의 열 이름과, 열마다 나온 값 목록입니다. 값 뒤 괄호의 숫자는 나온 횟수입니다. (총 ${fl.kept}줄)\n\n[고치고 싶은 점]\n${goal||'(따로 없음 — 같은 뜻인데 다르게 쓴 값, 오타, 단위·글자가 섞인 숫자, 날짜 형식 문제를 찾아 주세요)'}\n\n[열별 값]\n${body}[답하는 방법]\n- "바꾸기 목록"만 아래 형식의 표(세로선 | 로 나눔)로 답하고, 설명은 표 아래에 한두 줄만 쓰세요.\n  열 이름 | 원래 값 | 바꿀 값\n- 원래 값은 위 목록에 있는 값을 그대로 적으세요.\n- 줄 전체를 지워야 하면 바꿀 값에 (줄삭제)라고 적으세요.\n- 위 목록에 없는 값은 만들지 말고, 확실하지 않으면 바꾸지 마세요.\n- 숫자 열의 바꿀 값은 숫자만(쉼표·단위 없이), 날짜 열은 2026-07-08 모양으로 적으세요.`; }
-$('#aicp').onclick=()=>U.copy($('#aiprompt').value,$('#aifl'));
-const unq=s=>s.trim().replace(/^["'“”「」‘’]+|["'“”「」‘’]+$/g,'').trim();
-function parseAI(){ const raw=$('#aians').value; aiItems=[]; if(!raw.trim()){ $('#aiprev').innerHTML=''; $('#aiapply').disabled=true; return; }
-  const txt=U.restoreAlias(raw,aiMap); const norm=s=>s.replace(/[「」"'\s]/g,'');
-  txt.split(/\r?\n/).forEach(line=>{ line=line.trim(); if(!line||/^[\s|:\-]+$/.test(line)||(!line.includes('|')&&!line.includes('\t'))) return;
-    const p=line.replace(/^\||\|$/g,'').split(/\||\t/).map(s=>s.trim()); if(p.length<3) return; if(/원래/.test(p[1])&&/바꿀|새/.test(p[2])) return;
-    const c=T.header.findIndex(h=>norm(h)===norm(p[0])); let from=unq(p[1]), to=unq(p[2]); if(from==='(빈칸)') from=''; const del=/^\(?줄\s*삭제\)?$/.test(to); if(to==='(빈칸)') to='';
-    let n=0; if(c>=0) fl.rows.forEach(r=>{ if(!r.dup&&r.cells[c].v.trim()===from) n++; });
-    const status=c<0?'열 이름을 못 찾았어요':from===to&&!del?'바뀌는 게 없어요':n===0?'해당하는 값이 없어요':''; aiItems.push({c,col:p[0],from,to,del,n,ok:!status,status}); });
-  const ok=aiItems.filter(x=>x.ok);
-  $('#aiprev').innerHTML=aiItems.length?`<h3>미리 보기 <span class="cap">(${ok.length}개 적용 가능 · 합계 ${ok.reduce((a,x)=>a+x.n,0)}곳)</span></h3><div class="tablebox"><table><thead><tr><th>열</th><th>원래 값</th><th>바꿀 값</th><th class="r">해당</th><th></th></tr></thead><tbody>${aiItems.map(x=>`<tr style="${x.ok?'':'opacity:.5'}"><td>${esc(x.col)}</td><td><span class="vv">${esc(vis(x.from))}</span></td><td>${x.del?'<b>(줄 지우기)</b>':`<span class="vv">${esc(vis(x.to))}</span>`}</td><td class="r">${x.n}곳</td><td>${x.ok?'':`<span class="warn" style="font-size:15px">${x.status}</span>`}</td></tr>`).join('')}</tbody></table></div>`:'<div class="callout bad">바꾸기 목록 줄(열 이름 | 원래 값 | 바꿀 값)을 못 찾았어요. AI에게 "표 형식으로만 다시 답해 줘"라고 말해 보세요.</div>';
-  $('#aiapply').disabled=!ok.length; }
-$('#aians').oninput=parseAI;
-$('#aiapply').onclick=()=>{ const ok=aiItems.filter(x=>x.ok); if(!ok.length) return; const g=++gid; const cols=new Set(); ok.forEach(x=>{ push(x.del?{t:'delval',c:x.c,from:x.from,loose:true,g}:{t:'map',c:x.c,from:x.from,to:x.to,loose:true,g}); cols.add(x.c); });
-  buildFinal(); const ch=redetect([...cols]); const n=ok.reduce((a,x)=>a+x.n,0); $('#aians').value=''; renderAI(); $('#aimsg').textContent=`${ok.length}개를 적용했어요 (${n}곳)${ch.length?' · 열 종류가 바뀌었어요: '+ch.join(', '):''}`; $('#aiundo').disabled=false; };
-$('#aiundo').onclick=()=>{ undo(); renderAI(); $('#aimsg').textContent='되돌렸어요'; };
+/* ===== [구역 E] 화면 그리기 ===== */
+function go(n){
+  if((n===2||n===3)&&!D){toast('먼저 파일을 올려 주세요.');return}
+  step=n==='h'?1:n;['v1','v2','v3','vh'].forEach(id=>$('#'+id).hidden=true);$('#'+(n==='h'?'vh':'v'+n)).hidden=false;
+  $('#stp').innerHTML=['① 올리기','② 고치기','③ 결과 받기'].map((t,i)=>`<li class="${i+1===step?'on':i+1<step?'done':''}"><button data-a="step" data-n="${i+1}">${t}</button></li>`).join('');
+  if(n===2)renderAll();if(n===3)renderResult();window.scrollTo({top:0});
+}
+function renderTools(){$('#tools').innerHTML=TOOLS.map(([k,t,g])=>`<button class="b ${g?'go':''}" data-a="tool" data-k="${k}">${t}</button>`).join('')}
+function renderGrid(){
+  const g=$('#grid'),st=g.scrollTop,sl=g.scrollLeft,bad=new Set([...A.empty,...A.dup]),end=Math.min(D.length,lim+1);
+  let h='<table><thead><tr><th></th>'+D[0].map((_,c)=>`<th data-a="col" data-c="${c}" class="${sel.c===c?'sc':''}">${L(c)}${A.colCount[c]?`<b>${A.colCount[c]}</b>`:''}</th>`).join('')+'</tr></thead><tbody>';
+  for(let r=0;r<end;r++){const row=D[r];
+    h+=`<tr class="${r===0?'hr':''} ${bad.has(r)?'rowbad':''} ${sel.r===r?'rowsel':''}"><th data-a="rowh" data-r="${r}">${r+1}</th>`+row.map((v,c)=>{
+      const k=r+','+c,cl=[];if(A.types[c]==='num'&&r>0)cl.push('r');
+      if(r>0){if(A.flags.has(k))cl.push('bad');if(changed.has(k))cl.push('ch');if(sel.c===c)cl.push('col')}
+      if(sel.r===r&&sel.c===c)cl.push('cur');
+      return`<td data-a="cell" data-r="${r}" data-c="${c}" class="${cl.join(' ')}">${esc(v).replace(/^[ \u00a0\u3000]+|[ \u00a0\u3000]+$/g,m=>'␣'.repeat(m.length))}</td>`}).join('')+'</tr>'}
+  g.innerHTML=h+'</tbody></table>';g.scrollTop=st;g.scrollLeft=sl;
+  $('#more').innerHTML=D.length>end?`<button class="b" data-a="more">다음 ${LIM_STEP}줄 더 보기 (지금 ${end-1}줄 / 전체 ${D.length-1}줄)</button>`:'';
+}
+function renderInfo(){
+  const c=sel.c,t=A.types[c],n=A.colCount[c];
+  $('#nb').textContent=ref(sel.r,c);
+  if(document.activeElement!==$('#fx'))$('#fx').value=D[sel.r]?D[sel.r][c]:'';
+  $('#info').innerHTML=`<span>${L(c)}칸 「${esc(D[0][c])}」</span><label>읽는 종류: <select id="ctype" aria-label="이 칸의 종류">${['date','num','text'].map(k=>`<option value="${k}" ${t===k?'selected':''}>${U.TYPE_LABEL[k]}</option>`).join('')}</select></label><span>${n?`이상한 곳 ${n}곳`:'이상한 곳 없음'}</span>`;
+  const f=sel.r>0?A.flags.get(sel.r+','+c):null;
+  $('#fixline').innerHTML=f?(f.to!=null?`<p class="fixline"><span><code>${esc(vis(f.from))}</code> → <code>${esc(vis(f.to))}</code> (${esc(KIND[f.kind])})</span><button class="b go" data-a="fixcell">이 칸 고치기</button></p>`:`<p class="fixline"><span>「${esc(vis(f.from))}」은(는) ${U.TYPE_LABEL[t]} 칸에 안 맞아요. 위 줄에서 직접 고쳐 주세요.</span></p>`):'';
+}
+function renderTabs(){
+  const total=A.flags.size+A.empty.length+A.dup.length;
+  $('#tabs').innerHTML=[['prob',`이상한 곳 ${total}`],['vals','값 목록'],['find','바꾸기'],['log',`한 일·저장`]].map(([k,t])=>`<button data-a="tab" data-k="${k}" class="${tab===k?'on':''}">${t}</button>`).join('');
+}
+function renderPanel(){
+  const P=$('#panel');let h='';
+  if(tab==='prob'){
+    const by={};A.flags.forEach((f,k)=>{(by[f.kind]=by[f.kind]||[]).push([k,f])});const rows=[];
+    ['trim','date','num','same','sim','bad'].forEach(kd=>{const a=by[kd];if(!a)return;const[k0,f0]=a[0];
+      const ex=f0.to!=null?`예: <code>${esc(vis(f0.from))}</code> → <code>${esc(vis(f0.to))}</code>`:`예: <code>${esc(vis(f0.from))}</code>`;
+      rows.push(`<div class="prow"><div class="t"><b>${KIND[kd]} · ${a.length}곳</b><span>${ex}</span></div><div class="bt"><button class="b" data-a="goto" data-k="${k0}">보기</button>`+
+       (kd==='sim'?`<button class="b go" data-a="gosim" data-k="${k0}">값 목록에서 고르기</button>`:FIXABLE.includes(kd)?`<button class="b go" data-a="fixkind" data-k="${kd}">${a.length}곳 고치기</button>`:'')+'</div></div>')});
+    if(A.empty.length)rows.push(`<div class="prow"><div class="t"><b>빈 줄이 있어요 · ${A.empty.length}줄</b><span>${A.empty.slice(0,12).map(r=>r+1).join(', ')}번 줄</span></div><div class="bt"><button class="b go" data-a="tool" data-k="empty">지우기</button></div></div>`);
+    if(A.dup.length)rows.push(`<div class="prow"><div class="t"><b>똑같은 줄이 있어요 · ${A.dup.length}줄</b><span>${A.dup.slice(0,12).map(r=>r+1).join(', ')}번 줄 (먼저 나온 줄은 남겨요)</span></div><div class="bt"><button class="b" data-a="goto" data-k="${A.dup[0]},0">보기</button><button class="b go" data-a="tool" data-k="dup">지우기</button></div></div>`);
+    h=`<h2>${rows.length?'이상한 곳을 찾았어요':'이상한 곳이 없어요'}</h2>`+(rows.join('')||'<p class="dim">표가 깨끗해요. 아래 [다음]으로 가세요.</p>');
+  }else if(tab==='vals'){
+    const c=sel.c,cnt=new Map();for(let r=1;r<D.length;r++){const v=D[r][c];if(ws(v)!=='')cnt.set(v,(cnt.get(v)||0)+1)}
+    const all=[...cnt.entries()].sort((a,b)=>b[1]-a[1]),list=all.slice(0,300);
+    h=`<h2>${L(c)}칸 「${esc(D[0][c])}」에 들어 있는 값 ${all.length}가지</h2><p class="dim">같은 뜻의 값에 체크하고, 어떤 말로 합칠지 쓰세요.</p><div class="vals vscr">`+
+     (list.map(([v,n],i)=>`<label><input type="checkbox" data-a="chk" data-i="${i}" ${ui.checked.has(v)?'checked':''}><span class="vv">${esc(vis(v))}</span><span class="n">${n}개</span></label>`).join('')||'<p class="dim">값이 없어요.</p>')+'</div>'+
+     (all.length>300?`<p class="dim">많이 나온 300가지만 보여요.</p>`:'')+
+     `<label class="fld"><span>모두 이 말로 바꾸기</span><input type="text" id="tgt" value="${esc(ui.target)}" placeholder="예: 서울"></label><div class="tools"><button class="b" data-a="autosim">비슷한 값 자동으로 고르기</button><button class="b go" data-a="merge">체크한 값 합치기</button></div>`;
+    P._list=list.map(x=>x[0]);
+  }else if(tab==='find'){
+    h=`<h2>찾아 바꾸기</h2><label class="fld"><span>찾을 말</span><input type="text" id="fnd" value="${esc(ui.find)}"></label><label class="fld"><span>바꿀 말 (비워 두면 지워요)</span><input type="text" id="rep" value="${esc(ui.repl)}"></label>`+
+     `<label class="fld"><span>어디에서?</span><select id="scp"><option value="col" ${ui.scope==='col'?'selected':''}>지금 고른 ${L(sel.c)}칸만</option><option value="all" ${ui.scope==='all'?'selected':''}>표 전체</option></select></label><p class="dim" id="fcnt"></p><div class="tools"><button class="b go" data-a="doreplace">바꾸기</button></div>`;
+  }else{
+    h=`<h2>지금까지 한 일 ${log.length}건</h2>`+(log.length?`<ol class="log">${log.map(x=>`<li>${esc(x.label)}${x.op?'':' <span class="dim">(저장 안 돼요)</span>'}</li>`).join('')}</ol><p class="dim">맨 위 [되돌리기]를 누르면 마지막 일부터 취소돼요.</p>`:'<p class="dim">아직 한 일이 없어요. 원본 파일은 바뀌지 않아요.</p>')+recipeBox();
+  }
+  P.innerHTML=h;if(tab==='find')updFind();
+}
+function updFind(){const f=ui.find;let n=0;if(f)for(let r=1;r<D.length;r++)D[r].forEach((v,c)=>{if((ui.scope==='all'||c===sel.c)&&v.includes(f))n++});const e=$('#fcnt');if(e)e.textContent=f?`${n}곳이 바뀌어요.`:''}
+function renderAll(){
+  $('#undo').disabled=!undo.length;$('#redo').disabled=!redo.length;
+  if(step!==2)return;
+  A=analyze();renderTools();renderGrid();renderInfo();renderTabs();renderPanel();
+}
 
-/* ===== [구역 G] 합계 내기 ===== */
-function renderAgg(){ buildFinal(); const ct=U.cleanTable(fl);
-  U.aggControls($('#actl'),ct,types,cfg,draw); draw();
-  function draw(){ const a=U.aggregate(ct,types,cfg); $('#aout').innerHTML=`<div class="stats"><div><div class="big-num">${fmt(a.grand)}</div><div class="big-lab">${a.method==='avg'?'전체 평균':'전체'} ${U.METHOD[a.method]}</div></div><div><div class="big-num">${a.keys.length}</div><div class="big-lab">묶음 개수</div></div></div><div class="tablebox">${U.aggTable(a,ct.header[cfg.key],ct.header[cfg.val])}</div>`;
-    $('#achart').innerHTML=U.chart(a,kind); window._a=a; }
-  $$('#kind input').forEach(r=>r.onchange=()=>{kind=r.value;draw();}); }
+/* ===== [구역 F] 누르기·쓰기 처리 ===== */
+function autoSim(){const c=sel.c,m={},n={};ui.checked=new Set();ui.target='';
+  A.flags.forEach((f,k)=>{if(+k.split(',')[1]===c&&(f.kind==='same'||f.kind==='sim')){m[ws(f.from)]=f.to;n[f.to]=(n[f.to]||0)+1}});
+  const rep=Object.keys(n).sort((a,b)=>n[b]-n[a])[0];if(!rep){toast('이 칸에는 비슷한 값이 없어요.');return}
+  ui.target=rep;for(let r=1;r<D.length;r++){const v=D[r][c],x=ws(v);if(x===rep||m[x]===rep)ui.checked.add(v)}
+  toast(`「${rep}」와 비슷한 값을 골랐어요. 다른 말도 있으면 한 번 더 눌러 주세요.`)}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('.app [data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='step'){go(+b.dataset.n);return}
+  if(recipeAction(a,b))return;
+  if(a==='hdr'){pickIdx=+b.dataset.i;renderPicker();return}
+  if(a==='hdrgo'){const t=U.toTable(pend.rows.slice(pickIdx));if(!t){toast('이 줄 아래에 데이터가 없어요. 다른 줄을 골라 주세요.');return}hdrIdx=pickIdx;setTable(t,pend.name);return}
+  if(a==='hdrcancel'){go(D?2:1);return}
+  if(!D)return;
+  if(a==='cell'){sel={r:+b.dataset.r,c:+b.dataset.c};changed=new Set();ui.checked=new Set();ui.target='';renderAll()}
+  else if(a==='col'){sel.c=+b.dataset.c;ui.checked=new Set();ui.target='';renderAll()}
+  else if(a==='rowh'){sel.r=+b.dataset.r;renderAll()}
+  else if(a==='more'){lim+=LIM_STEP;renderAll()}
+  else if(a==='tab'){tab=b.dataset.k;renderAll()}
+  else if(a==='goto'){const[r,c]=b.dataset.k.split(',').map(Number);if(r>lim)lim=Math.ceil(r/LIM_STEP)*LIM_STEP;sel={r,c};ui.checked=new Set();ui.target='';renderAll();const t=document.querySelector('#grid td.cur');if(t)t.scrollIntoView({block:'nearest',inline:'nearest'});$('#grid').scrollIntoView({block:'nearest'})}
+  else if(a==='fixkind'){const kd=b.dataset.k;run(KIND[kd].replace(/요$/,'던 것 고치기'),{t:'kind',kind:kd})}
+  else if(a==='fixcell'){const f=A.flags.get(sel.r+','+sel.c);if(f&&f.to!=null)act(`${ref(sel.r,sel.c)} 칸 고치기`,()=>{D[sel.r][sel.c]=f.to;changed.add(sel.r+','+sel.c)})}
+  else if(a==='gosim'){const[r,c]=b.dataset.k.split(',').map(Number);sel={r,c};tab='vals';ui.checked=new Set();ui.target='';A=analyze();autoSim();renderAll()}
+  else if(a==='tool'){tool(b.dataset.k)}
+  else if(a==='chk'){const v=$('#panel')._list[+b.dataset.i];b.checked?ui.checked.add(v):ui.checked.delete(v);if(!ui.target&&ui.checked.size===1){ui.target=ws(v);$('#tgt').value=ui.target}}
+  else if(a==='autosim'){autoSim();renderAll()}
+  else if(a==='merge'){const to=(($('#tgt')||{}).value||ui.target).trim(),c=sel.c,set=ui.checked;if(!set.size){toast('합칠 값에 체크해 주세요.');return}if(to===''){toast('바꿀 말을 써 주세요.');return}
+    run(`${L(c)}칸 ${set.size}가지 값을 「${to}」로 합치기`,{t:'map',col:D[0][c],from:[...set],to});ui.checked=new Set();ui.target=''}
+  else if(a==='doreplace'){const f=ui.find,t=ui.repl,c=sel.c;if(!f){toast('찾을 말을 써 주세요.');return}
+    run(`「${f}」→「${t}」 바꾸기`,{t:'rep',col:ui.scope==='all'?null:D[0][c],find:f,repl:t})}
+});
+$('#undo').onclick=doUndo;$('#redo').onclick=doRedo;
+$('#fx').addEventListener('change',()=>{if(!D)return;const v=$('#fx').value,r=sel.r,c=sel.c;if(v===D[r][c])return;act(`${ref(r,c)} 칸 직접 고치기`,()=>{D[r][c]=v;changed.add(r+','+c)})});
+$('#fx').addEventListener('keydown',e=>{if(e.key==='Enter')e.target.blur()});
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.id==='tgt')ui.target=t.value;
+  if(t.classList&&t.classList.contains('rname'))rname=t.value;
+  if(t.id==='fnd'){ui.find=t.value;updFind()}
+  if(t.id==='rep')ui.repl=t.value;
+  if(t.id==='scp'){ui.scope=t.value;updFind()}});
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='ctype'){run(`${L(sel.c)}칸 「${D[0][sel.c]}」을 ${U.TYPE_LABEL[t.value]} 칸으로 읽기`,{t:'type',col:D[0][sel.c],type:t.value})}
+  if(t.id==='rsel')chosenId=t.value;
+  if(t.classList&&t.classList.contains('rfile')&&t.files[0]){const f=t.files[0],rd=new FileReader();rd.onload=()=>importRecipes(String(rd.result));rd.readAsText(f);t.value=''}});
 
-/* ===== [구역 H] 저장 ===== */
-$('#dl1').onclick=()=>{ buildFinal(); const t=U.cleanTable(fl); U.download(fname+'_정리됨.csv',U.toCSV([t.header].concat(t.rows))); };
-$('#dl2').onclick=()=>{ renderAgg(); U.download(fname+'_합계.csv',U.toCSV(U.aggRows(window._a,T.header[cfg.key]))); };
-$('#cp2').onclick=()=>{ renderAgg(); U.copy(U.aggRows(window._a,T.header[cfg.key]).map(r=>r.join('\t')).join('\n'),$('#fl')); };
+/* ===== [구역 G] ③ 결과 받기: 합계 + 저장 ===== */
+function cleanTable(){return{header:D[0],rows:D.slice(1).filter(r=>!isBlankRow(r))}}
+function renderResult(){
+  const an=analyze(),ct=cleanTable(),types=an.types,left=an.flags.size+an.empty.length+an.dup.length;
+  $('#sumline').innerHTML=`<div class="stats"><div><div class="big-num">${ct.rows.length}줄</div><div class="big-lab">정리된 표 (처음 ${origRows}줄)</div></div><div><div class="big-num">${log.length}건</div><div class="big-lab">고친 일</div></div></div>`+
+    (left?`<div class="callout bad">아직 이상한 곳이 ${left}곳 남아 있어요. <button class="b" data-a="step" data-n="2">고치러 가기</button></div>`:'<div class="callout ok">이상한 곳이 없어요. 이대로 합계를 내도 돼요.</div>');
+  $('#rcres').innerHTML=recipeBox();
+  const sig=types.join()+'|'+D[0].join('|');
+  if(pendingAgg){const ag=aggFromNames(pendingAgg);if(pendingAgg.kind){kind=pendingAgg.kind;$$('#kind input').forEach(x=>x.checked=x.value===kind)}if(ag){cfg=ag;cfgSig=sig}else toast('저장한 합계 설정의 칸 이름이 이 파일에 없어서 기본 설정으로 보여 드려요.');pendingAgg=null}
+  if(!cfg||sig!==cfgSig){cfg=U.pickDefaults(ct,types);cfgSig=sig}
+  U.aggControls($('#actl'),ct,types,cfg,draw);draw();
+  function draw(){aggA=U.aggregate(ct,types,cfg);aggCt=ct;
+    $('#aout').innerHTML=`<div class="stats"><div><div class="big-num">${fmt(aggA.grand)}</div><div class="big-lab">${aggA.method==='avg'?'전체 평균':'전체'} ${U.METHOD[aggA.method]}</div></div><div><div class="big-num">${aggA.keys.length}</div><div class="big-lab">묶음 개수</div></div></div><div class="tablebox">${U.aggTable(aggA,ct.header[cfg.key],ct.header[cfg.val])}</div>`;
+    $('#achart').innerHTML=U.chart(aggA,kind)}
+  $$('#kind input').forEach(r=>r.onchange=()=>{kind=r.value;draw()});
+}
+const sumRows=()=>U.aggRows(aggA,aggCt.header[cfg.key]);
+$('#dl1').onclick=()=>{const t=cleanTable();U.download(fname+'_정리됨.csv',U.toCSV([t.header].concat(t.rows)))};
+$('#dl2').onclick=()=>U.download(fname+'_합계.csv',U.toCSV(sumRows()));
+$('#cp1').onclick=()=>{const t=cleanTable();U.copy([t.header].concat(t.rows).map(r=>r.join('\t')).join('\n'),$('#fl'))};
+$('#cp2').onclick=()=>U.copy(sumRows().map(r=>r.join('\t')).join('\n'),$('#fl'));
 
+/* ===== [구역 H] 내 정리 방법: 저장하고, 다음 파일에 한 번에 적용 ===== */
+const OPS=['auto','kind','trim','date','num','fill','empty','dup','delcol','map','rep','type'];
+const str=x=>typeof x==='string';
+function validOp(o){return o&&OPS.includes(o.t)&&(o.col==null||str(o.col))&&(o.t!=='map'||(Array.isArray(o.from)&&o.from.every(str)&&str(o.to)))&&(o.t!=='rep'||(str(o.find)&&str(o.repl)))&&(o.t!=='type'||['date','num','text'].includes(o.type))&&(o.t!=='kind'||FIXABLE.includes(o.kind))&&(['trim','date','num','fill','delcol','map','type'].includes(o.t)?o.col!=null:true)}
+function aggNames(){if(!cfg||cfg.key>=D[0].length||cfg.val>=D[0].length||cfg.split>=D[0].length)return null;return{key:D[0][cfg.key],month:cfg.month,val:D[0][cfg.val],method:cfg.method,split:cfg.split>=0?D[0][cfg.split]:null,kind}}
+function aggFromNames(a){const key=colIdx(a.key),val=colIdx(a.val),split=a.split==null?-1:colIdx(a.split);if(key<0||(a.method!=='count'&&val<0)||(a.split!=null&&split<0))return null;return{key,month:!!a.month,val:val<0?0:val,method:a.method,split}}
+function applyRecipe(rc){
+  const skipped=[];let did=0,fixedN=0;changed=new Set();
+  rc.ops.forEach(({label,op})=>{
+    if(op.col!=null&&colIdx(op.col)<0){skipped.push(label);return}
+    const before=clone(D),ob=over.slice();applyOp(op);
+    const ch=!(eqD(before,D)&&JSON.stringify(ob)===JSON.stringify(over));
+    undo.push({d:before,over:ob,label,op});if(undo.length>60)undo.shift();redo=[];log.push({label,op});did++;if(ch)fixedN++});
+  pendingAgg=rc.agg||null;fixSel();
+  return `「${rc.name}」 방법을 적용했어요. ${did}가지를 해서 ${fixedN}가지에서 실제로 고쳤어요.`+(skipped.length?` 이 파일에 칸 이름이 없어 건너뛴 것 ${skipped.length}가지: ${skipped.slice(0,3).join(' / ')}`:'');
+}
+function importHTML(){return `<details class="dtl imp"><summary>다른 컴퓨터에서 가져오기</summary><p class="dim">다른 곳에서 복사한 글자를 붙여넣거나, 받아 둔 파일을 고르세요.</p><textarea class="rimp" aria-label="가져올 정리 방법" placeholder="여기에 붙여넣기"></textarea><div class="tools"><button class="b" data-a="rimp">가져오기</button><label class="b" style="display:inline-flex;align-items:center;cursor:pointer">파일 고르기<input type="file" class="rfile" accept=".json,.txt" hidden></label></div></details>`}
+function recipeBox(){
+  const nOps=log.filter(x=>x.op).length,skip=log.length-nOps,agg=cfg&&aggNames();
+  let h=`<div class="rbox"><h3>내 정리 방법 저장하기</h3><p class="dim">지금까지 한 일 중 다시 쓸 수 있는 ${nOps}가지${agg?'와 합계 설정을':'를'} 저장해요. 다음에 비슷한 엑셀을 올릴 때 한 번에 적용돼요.${skip?` (칸을 직접 고치거나 줄 하나를 지운 ${skip}가지는 저장되지 않아요.)`:''}${agg?'':' 합계 설정도 저장하려면 ③ 결과 받기에서 저장하세요.'}</p>`+
+   `<label class="fld"><span>이름</span><input type="text" class="rname" value="${esc(rname||fname+' 정리 방법')}"></label><div class="tools" style="margin-top:8px"><button class="b go" data-a="rsave">저장하기</button></div><p class="flash rmsg" role="status"></p>`+
+   (RC.length?RC.map(r=>`<div class="prow"><div class="t"><b>${esc(r.name)}</b><span>${r.ops.length}가지 · ${esc(r.date||'')}${r.agg?' · 합계 설정 있음':''}</span><details class="dtl"><summary>들어 있는 일 보기</summary><ol class="log">${r.ops.map(x=>`<li>${esc(x.label)}</li>`).join('')}</ol></details></div><div class="bt">${D?`<button class="b go" data-a="rapply" data-id="${r.id}">이 파일에 적용</button>`:''}<button class="b" data-a="rcopy" data-id="${r.id}">복사</button><button class="b" data-a="rdl" data-id="${r.id}">파일로 받기</button><button class="b" data-a="rdel" data-id="${r.id}">${String(armDel)===String(r.id)?'정말 지울까요?':'지우기'}</button></div></div>`).join(''):'<p class="dim">저장한 정리 방법이 아직 없어요.</p>')+importHTML()+'</div>';
+  return h}
+function renderRecipes(){
+  const el=$('#rcsel');
+  el.innerHTML=`<h3>내 정리 방법 쓰기 <span class="cap">(선택)</span></h3>`+(RC.length?`<label class="fld"><span>저장해 둔 방법을 고르면, 파일을 올릴 때 자동으로 정리해 드려요</span><select id="rsel"><option value="">쓰지 않기 (직접 고치기)</option>${RC.map(r=>`<option value="${r.id}" ${String(chosenId)===String(r.id)?'selected':''}>${esc(r.name)} (${r.ops.length}가지)</option>`).join('')}</select></label>`:'<p class="dim">저장한 정리 방법이 아직 없어요. ②에서 고친 뒤 저장해 두면 다음부터 여기서 고를 수 있어요.</p>')+importHTML();
+  if(D){if(step===3)$('#rcres').innerHTML=recipeBox();if(step===2&&tab==='log')renderPanel()}
+}
+function rflash(m){$$('.rmsg').forEach(e=>e.textContent=m);toast(m)}
+function importRecipes(text){
+  let a;try{a=JSON.parse(text)}catch(e){rflash('읽을 수 없는 글자예요. 복사한 정리 방법 전체를 붙여넣어 주세요.');toast('읽을 수 없는 글자예요. 복사한 정리 방법 전체를 붙여넣어 주세요.');return}
+  if(!Array.isArray(a))a=[a];let n=0;
+  a.forEach((r,i)=>{if(r&&str(r.name)&&Array.isArray(r.ops)&&r.ops.length&&r.ops.every(x=>x&&str(x.label)&&validOp(x.op))){const rc={id:Date.now()+i,name:r.name,date:str(r.date)?r.date:'',ops:r.ops.map(x=>({label:x.label,op:x.op})),agg:r.agg&&str(r.agg.key)?r.agg:null};const k=RC.findIndex(x=>x.name===rc.name);if(k>=0)RC[k]=rc;else RC.push(rc);n++}});
+  if(n){persistR();renderRecipes()}toast(n?`${n}개를 가져왔어요.`:'가져올 수 있는 정리 방법이 없어요. 글자가 다 복사됐는지 확인해 주세요.');rflash(n?`${n}개를 가져왔어요.`:'가져올 수 있는 정리 방법이 없어요.');
+}
+function recipeAction(a,b){
+  const rc=RC.find(x=>String(x.id)===String(b.dataset.id)),box=b.closest('.rbox,.imp,#rcsel');
+  if(a==='rsave'){const ops=log.filter(x=>x.op);if(!ops.length){rflash('저장할 일이 아직 없어요. 먼저 고쳐 보세요.');return true}
+    const name=((b.closest('.rbox').querySelector('.rname')||{}).value||'').trim()||fname+' 정리 방법';
+    const r={id:Date.now(),name,date:new Date().toISOString().slice(0,10),ops:ops.map(x=>({label:x.label,op:x.op})),agg:cfg?aggNames():null};
+    const k=RC.findIndex(x=>x.name===name);if(k>=0)RC[k]=r;else RC.push(r);rname='';chosenId=r.id;
+    const ok=persistR();renderRecipes();rflash(ok?`저장했어요: 「${name}」 (${ops.length}가지)`:'저장했지만 이 컴퓨터에는 남기지 못했어요. [복사]나 [파일로 받기]로 꼭 따로 보관하세요.');return true}
+  if(a==='rapply'){if(!D||!rc)return true;const m=applyRecipe(rc);toast(m);if(step===3)renderResult();else renderAll();renderRecipes();return true}
+  if(a==='rcopy'){if(rc)U.copy(JSON.stringify(rc),box.querySelector('.rmsg')||$('#fl'));return true}
+  if(a==='rdl'){if(rc)U.download(rc.name+'.json',JSON.stringify(rc,null,1),'application/json');return true}
+  if(a==='rdel'){if(!rc)return true;if(String(armDel)===String(rc.id)){RC=RC.filter(x=>x!==rc);persistR();armDel=null;if(String(chosenId)===String(rc.id))chosenId='';renderRecipes();rflash('지웠어요.')}else{armDel=rc.id;renderRecipes()}return true}
+  if(a==='rimp'){importRecipes(box.querySelector('.rimp').value);return true}
+  return false}
+
+renderRecipes();go(1);
 /* ===== [기능 추가 자리] 수업에서 AI로 만든 새 기능은 이 아래에 붙여요 ===== */
 })();
 </script>
