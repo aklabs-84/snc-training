@@ -5,8 +5,8 @@
 import importlib.util,zipfile,re,glob,os,sys
 _home=os.path.expanduser('~')
 _found=(glob.glob('/root/.claude/skills/synced/*/hwpx-lecture-planner')
-        +glob(_home+'/.claude/skills/**/hwpx-lecture-planner',recursive=True)
-        +glob(_home+'/.claude/plugins/**/hwpx-lecture-planner',recursive=True))
+        +glob.glob(_home+'/.claude/skills/**/hwpx-lecture-planner',recursive=True)
+        +glob.glob(_home+'/.claude/plugins/**/hwpx-lecture-planner',recursive=True))
 if not _found:sys.exit('hwpx-lecture-planner 스킬(양식 파일)을 찾지 못했어요. 스킬 폴더 위치를 SK 변수에 직접 적어 주세요.')
 SK=_found[0]
 spec=importlib.util.spec_from_file_location("fill_hwpx",SK+"/scripts/fill_hwpx.py");mod=importlib.util.module_from_spec(spec);spec.loader.exec_module(mod)
